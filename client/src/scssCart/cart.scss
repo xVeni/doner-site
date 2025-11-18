@@ -1,0 +1,223 @@
+$main-color: #5e652b;
+$black: #151616;
+
+.cart {
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 0 20px;
+  color: $black;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  box-sizing: border-box;
+
+  &__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+
+    .cart__back-btn,
+    .cart__clear-btn {
+      background: none;
+      border: 1px solid $main-color;
+      color: $main-color;
+      padding: 10px 16px;
+      border-radius: 30px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-decoration: none;
+
+      &:hover {
+        background: $main-color;
+        color: #fff;
+      }
+    }
+  }
+
+  &__title {
+    font-size: 28px;
+    font-weight: 900;
+    text-align: center;
+    margin-top: 10px;
+  }
+
+  &__items {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .cart-item {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 16px;
+    box-sizing: border-box;
+    gap: 20px;
+    transition: transform 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    &__img {
+      width: 120px;
+      height: 120px;
+      border-radius: 16px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    &__info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    &__title {
+      font-size: 18px;
+      font-weight: 800;
+      margin: 0;
+    }
+
+    &__desc {
+      font-size: 14px;
+      color: #666;
+      margin: 0 0 8px 0;
+    }
+
+    &__controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    &__quantity {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+
+      .cart-item__btn {
+        background: $main-color;
+        color: #fff;
+        border: none;
+        width: 28px;
+        height: 28px;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.2s;
+
+        &:hover {
+          background: darken($main-color, 8%);
+        }
+      }
+
+      .cart-item__count {
+        font-size: 16px;
+        font-weight: 600;
+      }
+    }
+
+    &__price {
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    &__remove {
+      background: none;
+      border: none;
+      font-size: 18px;
+      color: #999;
+      cursor: pointer;
+      transition: color 0.2s;
+
+      &:hover {
+        color: $main-color;
+      }
+    }
+  }
+
+  &__bottom {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    border-top: 1px solid #ccc;
+    padding-top: 20px;
+  }
+
+  &__summary {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 600;
+
+    .cart__sum-text {
+      color: #666;
+    }
+    .cart__sum-value {
+      color: $black;
+      font-weight: 800;
+    }
+  }
+
+  &__checkout-btn {
+    background: $main-color;
+    color: #fff;
+    border: none;
+    padding: 14px 28px;
+    border-radius: 30px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    font-size: 16px;
+
+    &:hover {
+      background: darken($main-color, 8%);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 0 10px;
+
+    .cart-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+
+      &__img {
+        width: 100%;
+        height: auto;
+        max-height: 180px;
+      }
+
+      &__controls {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+    &__bottom {
+      flex-direction: column;
+      align-items: stretch;
+
+      .cart__checkout-btn {
+        width: 100%;
+      }
+    }
+  }
+}

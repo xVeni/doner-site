@@ -1,0 +1,67 @@
+.zoneBlock {
+  width: 100%;
+  padding: 0 10%;
+  box-sizing: border-box;
+  margin-top: 20px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  padding: 8px 12px;
+  border-radius: 12px;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: default;
+  height: 60px; // одинаковая высота для всех карточек
+  margin-top: 10px; // отступ сверху между рядами
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
+  }
+}
+
+.colorBox {
+  width: 20px;
+  height: 40px;
+  border-radius: 6px;
+  margin-right: 12px;
+  flex-shrink: 0;
+  border: 1px solid #ddd;
+}
+
+.info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; // выравниваем текст по вертикали
+}
+
+.name {
+  font-weight: 600;
+  font-size: 14px;
+  color: black;
+  margin-bottom: 2px;
+}
+
+.price {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5e652b;
+}
+
+.mapContainer {
+  width: 100%;
+  height: 600px;
+  margin-top: 15px;
+  border-radius: 12px;
+  overflow: hidden;
+}

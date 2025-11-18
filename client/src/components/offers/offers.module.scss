@@ -1,0 +1,87 @@
+$main-color: #5e652b;
+$text-color: #1d1d1d;
+$gray: #666;
+$bg-light: #fefefe;
+
+.agreement {
+  padding: 60px 10%;
+  background: $bg-light;
+  color: $text-color;
+  display: flex;
+  justify-content: center;
+
+  .container {
+    max-width: 900px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+  }
+
+  .title {
+    font-size: 36px;
+    font-weight: 900;
+    text-align: center;
+    color: $main-color;
+    margin: 0;
+  }
+
+  .info {
+    font-size: 16px;
+    line-height: 1.8;
+    color: $text-color;
+
+    p {
+      margin: 5px 0;
+    }
+
+    a {
+      color: $main-color;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .downloadTitle {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 20px 0 10px 0;
+    color: $main-color;
+  }
+
+  .downloads {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .downloadBtn {
+      display: inline-block;
+      padding: 12px 20px;
+      background: $main-color;
+      color: #fff;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.2s ease;
+
+      &:hover {
+        background: darken($main-color, 8%);
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 40px 5%;
+
+    .title {
+      font-size: 28px;
+    }
+
+    .downloadBtn {
+      font-size: 14px;
+      padding: 10px 16px;
+    }
+  }
+}

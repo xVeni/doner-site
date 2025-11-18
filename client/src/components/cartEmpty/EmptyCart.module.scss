@@ -1,0 +1,44 @@
+.root {
+  text-align: center;
+  padding: 80px 20px;
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  align-items: center;
+}
+
+.title {
+  font-size: 42px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.text {
+  font-size: 20px;
+  line-height: 1.5;
+  color: #777;
+}
+
+.icon {
+  font-size: 80px;
+  opacity: 0.6;
+}
+
+.btn {
+  margin-top: 20px;
+  padding: 14px 28px;
+  font-size: 22px;
+  border-radius: 12px;
+  border: 2px solid #5e652b;
+  color: white;
+  background-color: #5e652b;
+  text-decoration: none;
+  transition: 0.2s ease;
+
+  &:hover {
+    background-color: #727a35;
+    border-color: #737a37;
+  }
+}

@@ -1,0 +1,74 @@
+[ 
+  {
+    "id": 0,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "Шаурма",
+    "weight": 310,
+    "desc":"вфвф",
+    "price": 350,
+    "category": 1
+  },
+  {
+    "id": 1,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "Шаурма",
+    "weight": "310",
+    "desc":"вфвф",
+    "price": 350,
+    "category": 1
+  },
+  {
+    "id": 2,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "Шаурма",
+    "weight": "310",
+    "desc":"вфвф",
+    "price": 350,
+    "category": 1
+  },
+  {
+    "id": 3,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "аффвф",
+    "weight": "3Вф",
+    "desc":"ввфф",
+    "price": 8950,
+    "category": 2
+  },
+{
+    "id": 0,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "Шаурма",
+    "weight": 310,
+    "desc":"вфвф",
+    "price": 350,
+    "category": 1
+  },
+  {
+    "id": 1,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "Шаурма",
+    "weight": "310",
+    "desc":"вфвф",
+    "price": 350,
+    "category": 1
+  },
+  {
+    "id": 2,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "Шаурма",
+    "weight": "310",
+    "desc":"вфвф",
+    "price": 350,
+    "category": 1
+  },
+  {
+    "id": 3,
+    "image": "https://avatars.mds.yandex.net/get-altay/2378041/2a000001740869c97ba591bea718cbd8c358/orig",
+    "title": "аффвф",
+    "weight": "3Вф",
+    "desc":"ввфф",
+    "price": 8950,
+    "category": 2
+  }
+]

@@ -1,0 +1,94 @@
+:root {
+  --hero-max-width: 1200px;
+  --hero-aspect-ratio: 2477 / 1156;
+  --hero-border-radius: 20px;
+  --hero-transition: 0.5s ease;
+  --hero-btn-size: 48px;
+}
+
+.hero {
+  position: relative;
+  max-width: var(--hero-max-width);
+  width: 100%;
+  margin: 40px auto;
+  overflow: hidden;
+  border-radius: var(--hero-border-radius);
+}
+
+.heroSliderWrapper {
+  width: 100%;
+  overflow: hidden;
+}
+
+.heroSlider {
+  display: flex;
+  width: 100%;
+  transition: transform var(--hero-transition);
+}
+
+.heroItem {
+  flex: 0 0 100%;
+  height: 0;
+  padding-top: calc(100% / (2477 / 1156)); // сохраняем пропорции
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: var(--hero-border-radius);
+}
+
+.heroBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: var(--hero-btn-size);
+  height: var(--hero-btn-size);
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: background 0.3s;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.7);
+  }
+
+  &.left {
+    left: 10px;
+  }
+  &.right {
+    right: 10px;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Адаптив */
+@media (max-width: 1024px) {
+  :root {
+    --hero-max-width: 90vw;
+  }
+}
+
+@media (max-width: 600px) {
+  :root {
+    --hero-max-width: 95vw;
+  }
+
+  .heroBtn {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}

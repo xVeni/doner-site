@@ -1,0 +1,83 @@
+import { Injectable } from '@nestjs/common';
+import { OrdersService } from '../orders/orders.service';
+import { Order } from '../orders/orders.entity';
+import TelegramBot from 'node-telegram-bot-api';
+
+@Injectable()
+export class TelegramService {
+  private bot: TelegramBot;
+  private chatId: string;
+
+  constructor(private readonly ordersService: OrdersService) {
+const token = process.env.TG_BOT_TOKEN;
+const chatId = process.env.TG_CHAT_ID;
+
+if (!token || !chatId) {
+  throw new Error('Не установлены переменные окружения TG_BOT_TOKEN или TG_CHAT_ID');
+}
+
+this.chatId = chatId;
+this.bot = new TelegramBot(token, { polling: true });
+
+
+    // Обработка кнопки "заказ обработан"
+    this.bot.on('callback_query', async (query) => {
+      const data = query.data; // complete_12
+      const [action, orderId] = data.split('_');
+
+      if (action === 'complete') {
+        const id = Number(orderId);
+
+        // обновляем статус
+        await this.ordersService.updateTelegramStatus(id, 'completed');
+
+        await this.bot.editMessageReplyMarkup(
+          { inline_keyboard: [] }, // убираем кнопку
+          { chat_id: this.chatId, message_id: query.message.message_id },
+        );
+
+        await this.bot.sendMessage(
+          this.chatId,
+          `✔ Заказ №${id} обработан`,
+        );
+
+        await this.bot.answerCallbackQuery(query.id);
+      }
+    });
+  }
+
+  // Генерация текста сообщения
+  private formatOrder(order: Order): string {
+    const itemsText = order.items
+      .map((i) => `Блюдо ${i.id_dishes} — ${i.quantity} шт.`)
+      .join('\n');
+
+    return (
+      `🆕 *Новый заказ №${order.id}*\n\n` +
+      `👤 *Имя:* ${order.customer_name}\n` +
+      `📞 *Телефон:* ${order.phone}\n` +
+      `📍 *Тип:* ${order.type}\n` +
+      `🏠 *Адрес:* ${order.address}\n` +
+      `💬 *Комментарий:* ${order.comment || '-'}\n` +
+      `💳 *Оплата:* ${order.paymentMethod}\n` +
+      `⏰ *Время:* ${order.time}\n\n` +
+      `🍱 *Состав заказа:*\n${itemsText}\n\n` +
+      `💰 *Сумма:* ${order.total} ₽\n\n` +
+      `Статус: ${order.status_tgBot}`
+    );
+  }
+
+  // Отправка заказа в Telegram
+  async sendOrderToTelegram(order: Order): Promise<void> {
+    const text = this.formatOrder(order);
+
+    await this.bot.sendMessage(this.chatId, text, {
+      parse_mode: 'Markdown',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
+        ],
+      },
+    });
+  }
+}

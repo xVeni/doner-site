@@ -1,0 +1,142 @@
+.root {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  padding: 10px;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 20px;
+  padding: 25px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+  position: relative;
+  overflow-y: auto;
+  max-height: 90vh;
+}
+
+.closeBtn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: #555;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.title {
+  margin-bottom: 15px;
+  text-align: center;
+}
+
+.section {
+  margin-bottom: 20px;
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 14px;
+
+    &:focus {
+      border-color: #5e652b;
+      outline: none;
+    }
+  }
+
+  textarea {
+    min-height: 70px;
+    resize: vertical;
+  }
+}
+
+.radioGroup {
+  display: flex;
+  gap: 20px;
+  label {
+    cursor: pointer;
+    font-weight: 500;
+  }
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.total {
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.submitBtn {
+  font-family: Arial Black;
+  font-weight: 100px;
+  background: #5e652b;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 30px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: darken(#5e652b, 8%);
+  }
+}
+
+.sectionCheckbox {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+  }
+
+  span {
+    font-weight: 500;
+  }
+}
+
+/* адаптив */
+@media (max-width: 480px) {
+  .modal {
+    padding: 15px;
+    border-radius: 12px;
+  }
+  .footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .submitBtn {
+    width: 100%;
+  }
+}
