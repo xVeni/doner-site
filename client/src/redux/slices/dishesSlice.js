@@ -7,7 +7,7 @@ export const fetchDish = createAsyncThunk(
     try {
       // Категория 0 и 1 — не добавляем параметр category (0 = хиты, 1 = все)
       const categoryParam = categoryId > 1 ? `category=${categoryId}&` : '';
-      //const url = `http://192.168.0.19:5000/dishes?${categoryParam}${search}`;
+      // const url = `http://192.168.0.14:5000/dishes?${categoryParam}${search}`;
       const url = `https://6909ebe21a446bb9cc209955.mockapi.io/Items?${categoryParam}${search}`;
       const { data } = await axios.get(url);
       return data;

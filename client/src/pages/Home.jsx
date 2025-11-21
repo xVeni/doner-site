@@ -65,6 +65,7 @@ export const Home = () => {
             <p>Ничего не найдено</p>
           )}
         </div>
+        <p>Фото на сайте могут отличаться от действительности</p>
       </div>
 
       {selectedItem && <ProductModal item={selectedItem} onClose={closeModal} />}

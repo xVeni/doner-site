@@ -2,11 +2,16 @@ import React, { useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import styles from './CheckoutModal.module.scss';
 import axios from 'axios';
-import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import { booleanPointInPolygon } from '@turf/turf';
 import zones from '../ZoneBlock/zones.json';
+import * as turf from '@turf/turf';
+import { useEffect } from 'react';
 
 const OUT_OF_ZONE_PRICE = 600;
 const DEFAULT_PRICE = 150;
+const FREE_DELIVERY_THRESHOLD = 1500;
+
+const DADATA_TOKEN = '728949fbd9504dea0d285c475d65396381f7f7b2';
 
 const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPrice }) => {
   const [deliveryType, setDeliveryType] = useState('delivery');
@@ -21,11 +26,32 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
   const [orderTime, setOrderTime] = useState('');
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [email, setEmail] = useState('');
-  const [deliveryPrice, setDeliveryPrice] = useState(DEFAULT_PRICE);
-  const [totalPrice, setTotalPrice] = useState(initialTotalPrice + DEFAULT_PRICE);
-  const [suggestions, setSuggestions] = useState([]);
 
+  // deliveryPrice учитывает бесплатную доставку
+  const initialDeliveryPrice = initialTotalPrice >= FREE_DELIVERY_THRESHOLD ? 0 : DEFAULT_PRICE;
+  const [deliveryPrice, setDeliveryPrice] = useState(initialDeliveryPrice);
+
+  // totalPrice вычисляем на лету
+  const totalPrice = initialTotalPrice + deliveryPrice;
+
+  const [suggestions, setSuggestions] = useState([]);
   const timeoutRef = useRef(null);
+
+  // Функция форматирования номера
+  const formatPhone = (value) => {
+    let digits = value.replace(/\D/g, '');
+    if (digits.startsWith('8')) digits = digits.slice(1);
+    if (!digits.startsWith('7')) digits = '7' + digits;
+    digits = digits.slice(0, 11);
+
+    let formatted = '+7 ';
+    if (digits.length > 1) formatted += '(' + digits.slice(1, 4);
+    if (digits.length >= 4) formatted += ') ' + digits.slice(4, 7);
+    if (digits.length >= 7) formatted += '-' + digits.slice(7, 9);
+    if (digits.length >= 9) formatted += '-' + digits.slice(9, 11);
+
+    return formatted;
+  };
 
   const orderItems = cartItems.map((item) => ({
     id_dishes: item.id,
@@ -36,147 +62,97 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
   const getNearestTime = () => {
     const now = new Date();
     now.setMinutes(now.getMinutes() + 20);
-    const hours = now.getHours().toString().padStart(2, '0');
-    const minutes = now.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
+    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Получение цены из JSON зон
   const getDeliveryPriceFromZones = (coords) => {
-    for (let feature of zones.features) {
-      if (booleanPointInPolygon({ type: 'Point', coordinates: coords }, feature)) {
-        const match = feature.properties.description.match(/(\d+)\s*р/);
-        if (match) return parseInt(match[1], 10);
-      }
+    const matchedZones = zones.features.filter((feature) =>
+      booleanPointInPolygon({ type: 'Point', coordinates: coords }, feature),
+    );
+
+    if (matchedZones.length === 0) return OUT_OF_ZONE_PRICE;
+
+    matchedZones.sort((a, b) => turf.area(a) - turf.area(b));
+
+    const priceMatch = matchedZones[0].properties.description.match(/(\d+)\s*р/);
+    return priceMatch ? parseInt(priceMatch[1], 10) : OUT_OF_ZONE_PRICE;
+  };
+
+  // После объявления [deliveryPrice, setDeliveryPrice]
+  useEffect(() => {
+    // Если сумма товаров >= 1500, доставка бесплатная
+    if (initialTotalPrice >= FREE_DELIVERY_THRESHOLD) {
+      setDeliveryPrice(0);
+    } else {
+      // Если доставка была бесплатной, восстанавливаем базовую стоимость доставки
+      setDeliveryPrice(DEFAULT_PRICE);
     }
-    return OUT_OF_ZONE_PRICE;
-  };
+  }, [initialTotalPrice]);
 
-  // Форматирование подсказки: улица и номер дома
-  const formatAddress = (item) => {
-    const road = item.address.road || item.address.street || '';
-    const houseNumber = item.address.house_number || '';
-    return road ? (houseNumber ? `${road}, ${houseNumber}` : road) : '';
-  };
-
-  // Проверка, есть ли улица и дом
-  const isAddressComplete = (item) => {
-    return item.address && (item.address.road || item.address.street) && item.address.house_number;
-  };
-
-  // Нормализация русских сокращений типа "мкр", "д", "ул"
-  const normalizeQuery = (text) => {
-    return text
-      .replace(/\bмкр\b/gi, 'микрорайон')
-      .replace(/\bул\b/gi, 'улица')
-      .replace(/\bпр\b/gi, 'проспект')
-      .replace(/\bпер\b/gi, 'переулок')
-      .replace(/\bкорп\b/gi, 'корпус')
-      .replace(/\bстр\b/gi, 'строение');
-  };
-
-  // Дебаунс-обработка адреса
   const handleAddressChange = (value) => {
     setAddress(value);
     setSuggestions([]);
-
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     timeoutRef.current = setTimeout(async () => {
-      if (!value.trim()) {
-        setDeliveryPrice(DEFAULT_PRICE);
-        setTotalPrice(initialTotalPrice + DEFAULT_PRICE);
-        return;
-      }
+      if (!value.trim()) return;
 
       try {
-        const response = await axios.get('https://suggest-maps.yandex.ru/v1/suggest', {
-          params: {
-            apikey: '83b87b6a-7c0f-403a-bca1-0a380902be6e',
-            text: value,
-            lang: 'ru_RU',
-            types: 'geo',
-            results: 5,
+        const res = await axios.post(
+          'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address',
+          {
+            query: value,
+            count: 5,
+            locations: [{ city: 'Чита', region: 'Забайкальский' }],
           },
-        });
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+              Authorization: `Token ${DADATA_TOKEN}`,
+            },
+          },
+        );
 
-        if (!response.data.results) return;
-
-        const formatted = response.data.results.map((item, index) => ({
-          place_id: index,
-          display_name: item.text,
-          fullText: item.text,
-        }));
-
-        setSuggestions(formatted);
-      } catch (error) {
-        console.error('Ошибка Yandex Suggest:', error);
+        if (res.data.suggestions) {
+          setSuggestions(res.data.suggestions);
+        }
+      } catch (err) {
+        console.error('Ошибка Dadata suggest:', err);
       }
-    }, 500);
+    }, 600);
   };
 
-  // Выбор подсказки (YANDEX GEOCODER)
   const handleSelectSuggestion = async (item) => {
-    setAddress(item.display_name);
+    setAddress(item.value);
     setSuggestions([]);
 
-    try {
-      const geo = await axios.get('https://geocode-maps.yandex.ru/1.x/', {
-        params: {
-          apikey: '83b87b6a-7c0f-403a-bca1-0a380902be6e',
-          geocode: item.fullText,
-          format: 'json',
-        },
-      });
-
-      const pos = geo.data.response.GeoObjectCollection.featureMember[0].GeoObject.Point.pos;
-
-      const [lon, lat] = pos.split(' ').map(Number);
-
-      const price = getDeliveryPriceFromZones([lon, lat]);
-
-      setDeliveryPrice(price);
-      setTotalPrice(initialTotalPrice + price);
-    } catch (error) {
-      console.error('Ошибка Yandex Geocoder:', error);
-      alert('Не удалось определить координаты адреса');
+    const data = item.data;
+    if (!data.geo_lat || !data.geo_lon) {
+      alert('Не удалось определить координаты');
+      return;
     }
+
+    const lat = Number(data.geo_lat);
+    const lon = Number(data.geo_lon);
+
+    const priceFromZone = getDeliveryPriceFromZones([lon, lat]);
+
+    // Бесплатная доставка, если сумма товаров >= FREE_DELIVERY_THRESHOLD
+    const finalDeliveryPrice = initialTotalPrice >= FREE_DELIVERY_THRESHOLD ? 0 : priceFromZone;
+
+    setDeliveryPrice(finalDeliveryPrice);
   };
 
   const handleSubmit = async () => {
-    // Проверка обязательных полей
-    if (!customerName.trim()) {
-      alert('Пожалуйста, введите ваше имя');
-      return;
-    }
-    if (!phone.trim()) {
-      alert('Пожалуйста, введите телефон');
-      return;
-    }
-    if (!email.trim()) {
-      alert('Пожалуйста, введите email');
-      return;
-    }
-    if (deliveryType === 'delivery' && !address.trim()) {
-      alert('Пожалуйста, введите адрес доставки');
-      return;
-    }
-    if (deliveryType === 'delivery' && !comment.trim()) {
-      alert('Пожалуйста, укажите комментарий к заказу');
-      return;
-    }
-    if (paymentMethod === 'cash' && !changeAmount.trim()) {
-      alert('Пожалуйста, укажите сумму для сдачи');
-      return;
-    }
-    if (timeOption === 'custom' && !orderTime.trim()) {
-      alert('Пожалуйста, выберите время заказа');
-      return;
-    }
-    if (!agreePolicy) {
-      alert('Пожалуйста, согласитесь с политикой конфиденциальности');
-      return;
-    }
+    if (!customerName.trim()) return alert('Введите имя');
+    if (!phone.trim()) return alert('Введите телефон');
+    if (!email.trim()) return alert('Введите email');
+    if (deliveryType === 'delivery' && !address.trim()) return alert('Введите адрес');
+    if (deliveryType === 'delivery' && !comment.trim()) return alert('Введите комментарий');
+    if (paymentMethod === 'cash' && !changeAmount.trim()) return alert('Введите сумму');
+    if (timeOption === 'custom' && !orderTime.trim()) return alert('Выберите время');
+    if (!agreePolicy) return alert('Необходимо согласие с политикой');
 
     const timeToSend = timeOption === 'nearest' ? getNearestTime() : orderTime;
 
@@ -193,18 +169,17 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
       change_amount: paymentMethod === 'cash' ? changeAmount : null,
       time: timeToSend,
       email,
+      deliveryPrice,
     };
 
     try {
-      await axios.post('http://192.168.0.11:3000/orders', orderData);
+      await axios.post('http://192.168.0.14:5000/orders', orderData);
       alert('Заказ успешно оформлен!');
       onClose();
     } catch (error) {
-      alert('Ошибка при отправке заказа 😢');
       console.error(error);
+      alert('Ошибка при отправке заказа');
     }
-
-    console.log(orderData);
   };
 
   if (!isOpen) return null;
@@ -215,8 +190,10 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
         <button className={styles.closeBtn} onClick={onClose}>
           ✕
         </button>
+
         <h2 className={styles.title}>Оформление заказа</h2>
 
+        {/* Имя + телефон */}
         <div className={styles.section}>
           <label>Ваше имя:</label>
           <input
@@ -227,13 +204,14 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
           />
           <label>Телефон:</label>
           <input
-            type="text"
+            type="tel"
             placeholder="+7 (999) 999-99-99"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => setPhone(formatPhone(e.target.value))}
           />
         </div>
 
+        {/* Email */}
         <div className={styles.section}>
           <label>Email для отправки чека:</label>
           <input
@@ -244,6 +222,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
           />
         </div>
 
+        {/* Доставка или самовывоз */}
         <div className={styles.section}>
           <label>Выберите способ получения:</label>
           <div className={styles.radioGroup}>
@@ -268,33 +247,49 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
           </div>
         </div>
 
+        {/* Адрес */}
         {deliveryType === 'delivery' ? (
           <div className={styles.section}>
+            <div className={styles.deliveryInfo}>
+              <p className={styles.infoTitle}>Доставка из кафе работает:</p>
+              <ul className={styles.infoList}>
+                <li>с пн-сб 9:30-22:30</li>
+                <li>в вс 10:00-22:30</li>
+                <li>
+                  Время доставки от 60-90 минут (может быть увеличенно в зависимости от расстояния,
+                  маршрута, погодных условий, загруженности)
+                </li>
+                <li>Доставка осуществляется до подъезда, а не до двери</li>
+              </ul>
+            </div>
             <label>Адрес доставки:</label>
             <input
               type="text"
-              placeholder="Введите полный адрес"
+              placeholder="Введите адрес"
               value={address}
               onChange={(e) => handleAddressChange(e.target.value)}
             />
-            <div style={{ marginTop: '5px', fontWeight: 'bold' }}>
+            <div className={styles.deliveryPrice}>
               Стоимость доставки: {deliveryPrice} ₽
+              {initialTotalPrice >= FREE_DELIVERY_THRESHOLD && ' (бесплатно)'}
             </div>
 
-            <ul style={{ border: '1px solid #ccc', marginTop: 0, paddingLeft: 0 }}>
-              {suggestions.map((sug) => (
-                <li
-                  key={sug.place_id}
-                  style={{ listStyle: 'none', cursor: 'pointer', padding: 5 }}
-                  onClick={() => handleSelectSuggestion(sug)}>
-                  {sug.display_name}
-                </li>
-              ))}
-            </ul>
+            {suggestions.length > 0 && (
+              <ul className={styles.suggestions}>
+                {suggestions.map((s) => (
+                  <li
+                    key={s.value}
+                    className={styles.suggestionItem}
+                    onClick={() => handleSelectSuggestion(s)}>
+                    {s.value}
+                  </li>
+                ))}
+              </ul>
+            )}
 
-            <label>Комментарий к заказу:</label>
+            <label>Комментарий:</label>
             <textarea
-              placeholder="Например: подъезд 3, домофон 123"
+              placeholder="Подъезд, домофон, этаж..."
               value={comment}
               onChange={(e) => setComment(e.target.value)}
             />
@@ -304,10 +299,11 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
             <p>
               <strong>Адрес ресторана:</strong> г. Чита, ул. Курнатовского, 30
             </p>
-            <p>Заберите заказ через 20 минут после оформления.</p>
+            <p>Время заказа от 20 минут.</p>
           </div>
         )}
 
+        {/* Остальные блоки */}
         <div className={styles.sectionCheckbox}>
           <span>Нужно перезвонить</span>
           <input type="checkbox" checked={callBack} onChange={() => setCallBack(!callBack)} />
@@ -329,7 +325,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
           <label>Способ оплаты:</label>
           <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <option value="card">Картой онлайн</option>
-            <option value="cash">Наличными при получении</option>
+            <option value="cash">Наличными</option>
           </select>
         </div>
 
@@ -355,6 +351,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
               Выбрать своё
             </label>
           </div>
+
           {timeOption === 'custom' && (
             <input type="time" value={orderTime} onChange={(e) => setOrderTime(e.target.value)} />
           )}

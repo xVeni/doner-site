@@ -35,6 +35,7 @@ const Cart = () => {
       </div>
 
       <h1 className="cart__title">Корзина</h1>
+      <p>При заказе от 1500 ₽ доставка бесплатная</p>
 
       <div className="cart__items">
         {items.map((item) => (
