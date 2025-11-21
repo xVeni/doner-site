@@ -5,7 +5,7 @@ import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({ origin: '*' });
-  await app.listen( 5000, '0.0.0.0');
+  await app.listen( 3000, '0.0.0.0');
   app.useGlobalPipes(
   new ValidationPipe({
     whitelist: true,            // удаляет лишние поля
