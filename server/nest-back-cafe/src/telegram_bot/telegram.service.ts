@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, forwardRef, Inject } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { Order } from '../orders/orders.entity';
 import TelegramBot from 'node-telegram-bot-api';
@@ -8,7 +8,9 @@ export class TelegramService {
   private bot: TelegramBot;
   private chatId: string;
 
-  constructor(private readonly ordersService: OrdersService) {
+  constructor(@Inject(forwardRef(() => OrdersService))
+    private readonly ordersService: OrdersService,
+  ) {
 const token = process.env.TG_BOT_TOKEN;
 const chatId = process.env.TG_CHAT_ID;
 
@@ -49,7 +51,7 @@ this.bot = new TelegramBot(token, { polling: true });
   // Генерация текста сообщения
   private formatOrder(order: Order): string {
     const itemsText = order.items
-      .map((i) => `Блюдо ${i.id_dishes} — ${i.quantity} шт.`)
+      .map((i) => `Блюдо ${i.title} — ${i.quantity} шт.`)
       .join('\n');
 
     return (
@@ -60,8 +62,10 @@ this.bot = new TelegramBot(token, { polling: true });
       `🏠 *Адрес:* ${order.address}\n` +
       `💬 *Комментарий:* ${order.comment || '-'}\n` +
       `💳 *Оплата:* ${order.paymentMethod}\n` +
+      `💳 *Сдача с:* ${order.change_amount}\n` +
       `⏰ *Время:* ${order.time}\n\n` +
       `🍱 *Состав заказа:*\n${itemsText}\n\n` +
+      `💰 *Сумма доставки уже включена в стоимость:* ${order.deliveryPrice} ₽\n\n` +
       `💰 *Сумма:* ${order.total} ₽\n\n` +
       `Статус: ${order.status_tgBot}`
     );

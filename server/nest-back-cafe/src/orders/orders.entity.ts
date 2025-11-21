@@ -39,15 +39,26 @@ export class Order {
   time: string; // строка времени
 
   @Column()
-  Email: string; // Эл-почта
+  email: string; // Эл-почта
 
   @Column({ default: 'new' })
   status: string;
 
-    @Column({ default: 'pending' })
+    @Column({ default: 'В ожидании' })
   status_tgBot: string; // pending | completed
+
+  @Column({nullable: true})
+  deliveryPrice: string;
+
+  
+  @Column({ nullable: true })
+  payment_id:string;
+
+  @Column({ nullable: true })
+  payment_url:string;
 
   @CreateDateColumn()
   created_at: Date;
+
 
 }
