@@ -173,7 +173,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
     };
 
     try {
-      await axios.post('http://localhost:3000/api/orders', orderData);
+      await axios.post('/api/orders', orderData);
       alert('Заказ успешно оформлен!');
       onClose();
     } catch (error) {
