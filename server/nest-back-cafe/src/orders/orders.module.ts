@@ -9,7 +9,7 @@ import { PaymentModule } from 'src/payment/payment.module';
 @Module({
   imports: [TypeOrmModule.forFeature([Order]),
             forwardRef( () =>TelegramModule),
-          PaymentModule ],
+           ],
   controllers: [OrdersController],
   providers: [OrdersService],
    exports: [OrdersService],

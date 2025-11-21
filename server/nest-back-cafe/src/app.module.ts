@@ -24,7 +24,7 @@ console.log('STATIC PATH:', join(__dirname, '..', 'uploads'));
       password: process.env.DB_PASS || '',
       database: process.env.DB_NAME,
       entities: [Dish, Order],
-      synchronize: true, //todo: Во время продакшена нужно отключить 
+      synchronize: false, //todo: Во время продакшена нужно отключить 
 
     }),
     ServeStaticModule.forRoot({
