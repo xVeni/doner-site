@@ -6,11 +6,13 @@ export const fetchDish = createAsyncThunk(
   async ({ categoryId, searchValue }, { rejectWithValue }) => {
     try {
       const categoryParam = categoryId > 1 ? `category=${categoryId}&` : '';
-      const url = `/api/dishes?${categoryParam}${searchValue || ''}`;
+      const searchParam = searchValue ? `search=${encodeURIComponent(searchValue)}` : '';
+
+      const url = `/api/dishes?${categoryParam}`;
       const { data } = await axios.get(url);
-      return data;
+
+      return Array.isArray(data) ? data : [];
     } catch (err) {
-      console.error('Ошибка при загрузке блюд:', err);
       return rejectWithValue('Ошибка при получении данных');
     }
   },
