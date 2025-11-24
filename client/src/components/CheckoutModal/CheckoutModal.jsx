@@ -164,6 +164,7 @@ const CheckoutPage = () => {
       time: timeToSend,
       email,
       deliveryPrice,
+      payment_id: null,
     };
 
     try {
