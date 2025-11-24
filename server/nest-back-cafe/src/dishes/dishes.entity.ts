@@ -26,3 +26,4 @@ export class Dish {
     @Column()
     best_sell: number;
 }
+
