@@ -3,17 +3,17 @@ import axios from 'axios';
 
 export const fetchDish = createAsyncThunk(
   'dish/fetchDishStatus',
-  async ({ categoryId, search }, { rejectWithValue }) => {
+  async ({ categoryId, searchValue }, { rejectWithValue }) => {
     try {
-      // Категория 0 и 1 — не добавляем параметр category (0 = хиты, 1 = все)
       const categoryParam = categoryId > 1 ? `category=${categoryId}&` : '';
-      // const url = `http://192.168.0.14:5000/dishes?${categoryParam}${search}`;
-      //const url = `https://6909ebe21a446bb9cc209955.mockapi.io/Items?${categoryParam}${search}`;
-      const url = `http://127.0.0.1:3000/dishes?${categoryParam}${search}`;
+      const searchParam = searchValue ? `search=${encodeURIComponent(searchValue)}` : '';
+
+      const url = `/api/dishes?${categoryParam}${searchValue}`;
+      // ${categoryParam}${searchValue}
       const { data } = await axios.get(url);
-      return data;
+
+      return Array.isArray(data) ? data : [];
     } catch (err) {
-      console.error('Ошибка при загрузке блюд:', err);
       return rejectWithValue('Ошибка при получении данных');
     }
   },
