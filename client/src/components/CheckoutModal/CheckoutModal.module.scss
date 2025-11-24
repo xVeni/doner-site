@@ -1,288 +1,251 @@
-/* Контейнер модалки и overlay */
-/* Контейнер модалки и overlay */
-.root {
-  position: fixed;
-  inset: 0;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom)
-    env(safe-area-inset-left);
-  background: rgba(0, 0, 0, 0.45);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 100;
-  box-sizing: border-box;
-}
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
 
-/* Сама модалка */
-.modal {
-  background: #fff;
-  border-radius: 20px;
-  padding: 25px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+.page {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 0 20px;
   position: relative;
-  max-height: calc(100vh - 40px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  box-sizing: border-box;
+  font-family: 'Manrope';
+  color: #1a1a1a;
 
-  /* Добавляем отступ от краев экрана */
-  margin: 20px; /* <- это создаёт отступ вокруг модалки */
-}
-
-/* Кнопка закрытия */
-.closeBtn {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background: transparent;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
-  color: #555;
-}
-
-/* Заголовок */
-.title {
-  margin-bottom: 15px;
-  text-align: center;
-}
-
-/* Секции формы */
-.section {
-  margin-bottom: 20px;
-
-  label {
-    display: block;
-    margin-bottom: 8px;
+  .backBtn {
+    display: inline-block;
+    margin-bottom: 20px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    background: #f0f0f0;
+    color: #3b3b3b;
     font-weight: 600;
+    text-decoration: none;
+    transition: 0.2s all;
+
+    &:hover {
+      background: #5e652b;
+      color: #fff;
+    }
   }
 
-  input,
-  textarea,
-  select {
-    width: 100%;
-    box-sizing: border-box; /* учитывает padding и border */
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    padding: 10px; /* одинаковый padding слева и справа */
-    font-size: 14px;
-  }
-
-  textarea {
-    min-height: 70px;
-    resize: vertical;
-  }
-}
-
-/* Стоимость доставки */
-.deliveryPrice {
-  margin-top: 6px;
-  font-weight: 700;
-}
-
-/* Подсказки */
-.suggestions {
-  margin-top: 5px;
-  position: absolute;
-  width: 100%; /* растягиваем подсказки по ширине инпута */
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 10px;
-  list-style: none;
-  padding: 0;
-  z-index: 99999;
-  max-height: 200px;
-  overflow-y: auto;
-  box-sizing: border-box;
-}
-
-.suggestionItem {
-  padding: 10px;
-  cursor: pointer;
-}
-
-.suggestionItem:hover {
-  background: #f5f5f5;
-}
-
-/* Радио кнопки */
-.radioGroup {
-  display: flex;
-  gap: 20px;
-
-  label {
+  .closeBtn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 50%;
+    font-size: 20px;
+    width: 40px;
+    height: 40px;
     cursor: pointer;
-    font-weight: 500;
-  }
-}
-
-/* Футер модалки */
-.footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.total {
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.submitBtn {
-  font-family: Arial Black;
-  background: #5e652b;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 30px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.submitBtn:hover {
-  background: #4b5320;
-}
-
-/* Checkbox секции */
-.sectionCheckbox {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-
-  input[type='checkbox'] {
-    width: 18px;
-    height: 18px;
+    transition: 0.2s;
+    &:hover {
+      background: #5e652b;
+      color: #fff;
+    }
   }
 
-  span {
-    font-weight: 500;
+  h1.pageTitle {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 40px;
+  }
+
+  .columns {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+
+    .leftColumn {
+      flex: 2;
+      min-width: 300px;
+    }
+
+    .rightColumn {
+      flex: 1;
+      min-width: 280px;
+      background: #fff;
+      padding: 25px 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+      h3 {
+        margin-bottom: 20px;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .cartItems {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .cartSummary {
+        margin-top: 20px;
+        font-weight: 600;
+        .total {
+          font-size: 20px;
+          color: #5e652b;
+        }
+      }
+    }
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 25px 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: visible; // чтобы подсказки не обрезались
+  }
+
+  .cardTitle {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+
+  .section {
+    margin-bottom: 20px;
+    position: relative; // для абсолютных подсказок
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 10px 12px; // уменьшили padding
+      border-radius: 16px;
+      border: 1px solid #ddd;
+      font-size: 13px; // уменьшили размер шрифта
+      outline: none;
+      transition: 0.2s all;
+      &:focus {
+        border-color: #5e652b;
+        box-shadow: 0 0 0 3px rgba(94, 101, 43, 0.15);
+      }
+    }
+    textarea {
+      min-height: 70px;
+    }
+  }
+
+  // Двухколоночные ряды для полей
+  .row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+
+    .section {
+      flex: 1 1 100%; // делаем полностью адаптивным
+      min-width: 120px;
+    }
+  }
+
+  .section input,
+  .section textarea,
+  .section select {
+    width: 100%;
+    max-width: 100%; // предотвращает выход за пределы блока
+    box-sizing: border-box;
+  }
+
+  .radioGroup {
+    display: flex;
+    gap: 25px;
+    label {
+      cursor: pointer;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      input {
+        width: 18px;
+        height: 18px;
+      }
+    }
+  }
+
+  .sectionCheckbox {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    input {
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .submitBtn {
+    background: #5e652b;
+    color: #fff;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 30px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+    transition: 0.2s all;
+    &:hover {
+      background: #4b5320;
+    }
+  }
+
+  .deliveryPrice {
+    margin-top: 6px;
+    font-weight: 700;
+  }
+
+  .suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    margin-top: 5px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    list-style: none;
+    padding: 0;
+    max-height: 180px;
+    overflow-y: auto;
+    background: #fff;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  }
+
+  .suggestionItem {
+    padding: 10px 15px;
+    cursor: pointer;
+    &:hover {
+      background: #f0f0f0;
+    }
+  }
+
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
   }
 }
 
 /* Адаптив */
-@media (max-width: 480px) {
-  .modal {
-    padding: 15px;
-    border-radius: 12px;
-  }
-
-  .footer {
+@media (max-width: 1024px) {
+  .columns {
     flex-direction: column;
-    align-items: stretch;
   }
-
-  .submitBtn {
-    width: 100%;
-  }
-}
-
-/* Зоны карты и легенда */
-.zoneBlock {
-  width: 100%;
-  padding: 0 10%;
-  box-sizing: border-box;
-  margin-top: 20px;
-}
-
-.legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  background: #fff;
-  padding: 8px 12px;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  cursor: default;
-  height: 60px;
-  margin-top: 10px;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 12px rgba(0, 0, 0, 0.12);
-  }
-}
-
-.colorBox {
-  width: 20px;
-  height: 40px;
-  border-radius: 6px;
-  margin-right: 12px;
-  flex-shrink: 0;
-  border: 1px solid #ddd;
-}
-
-.info {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.name {
-  font-weight: 600;
-  font-size: 14px;
-  color: black;
-  margin-bottom: 2px;
-}
-
-.price {
-  font-size: 13px;
-  font-weight: 700;
-  color: #5e652b;
-}
-
-.mapContainer {
-  width: 100%;
-  height: 600px;
-  margin-top: 15px;
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.deliveryInfo {
-  margin-top: 20px;
-  padding: 15px;
-  background: #f9f9f9;
-  border-radius: 15px;
-  border: 1px solid #eee;
-
-  .infoTitle {
-    font-weight: 600;
-    margin-bottom: 10px;
-    color: #333;
-  }
-
-  .infoList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
-    li {
-      position: relative;
-      padding-left: 20px;
-      margin-bottom: 8px;
-      font-size: 14px;
-      color: #555;
-
-      &::before {
-        content: '•';
-        position: absolute;
-        left: 0;
-        color: #5e652b; // цвет маркера
-        font-size: 18px;
-        line-height: 1;
-      }
-    }
+  .row .section {
+    flex: 1 1 100%;
   }
 }

@@ -3,12 +3,13 @@ import axios from 'axios';
 
 export const fetchDish = createAsyncThunk(
   'dish/fetchDishStatus',
-  async ({ categoryId, searchValue }, { rejectWithValue }) => {
+  async ({ categoryId, search }, { rejectWithValue }) => {
     try {
       const categoryParam = categoryId > 1 ? `category=${categoryId}&` : '';
-      const searchParam = searchValue ? `search=${encodeURIComponent(searchValue)}` : '';
-
-      const url = `/api/dishes?${categoryParam}${searchValue}`;
+      const searchParam = search ? `search=${encodeURIComponent(search)}` : '';
+      //https://6909ebe21a446bb9cc209955.mockapi.io/Items?
+      //const url = `/api/dishes?${categoryParam}${searchParam}`;
+      const url = `https://6909ebe21a446bb9cc209955.mockapi.io/Items?${categoryParam}${searchParam}`;
       // ${categoryParam}${searchValue}
       const { data } = await axios.get(url);
 

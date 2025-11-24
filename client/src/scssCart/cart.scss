@@ -185,6 +185,7 @@ $black: #151616;
     cursor: pointer;
     transition: background 0.2s ease;
     font-size: 16px;
+    text-decoration: none;
 
     &:hover {
       background: darken($main-color, 8%);

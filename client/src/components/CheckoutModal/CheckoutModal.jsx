@@ -1,19 +1,22 @@
-import React, { useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import styles from './CheckoutModal.module.scss';
+// CheckoutPage.jsx
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import styles from './CheckoutModal.module.scss'; // сохраняем стили
 import axios from 'axios';
 import { booleanPointInPolygon } from '@turf/turf';
 import zones from '../ZoneBlock/zones.json';
 import * as turf from '@turf/turf';
-import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
 
 const OUT_OF_ZONE_PRICE = 600;
 const DEFAULT_PRICE = 150;
 const FREE_DELIVERY_THRESHOLD = 1500;
-
 const DADATA_TOKEN = '728949fbd9504dea0d285c475d65396381f7f7b2';
 
-const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPrice }) => {
+const CheckoutPage = () => {
+  const navigate = useNavigate();
+  const { items: cartItems, totalPrice: initialTotalPrice } = useSelector((state) => state.cart);
+
   const [deliveryType, setDeliveryType] = useState('delivery');
   const [address, setAddress] = useState('');
   const [comment, setComment] = useState('');
@@ -27,17 +30,26 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [email, setEmail] = useState('');
 
-  // deliveryPrice учитывает бесплатную доставку
   const initialDeliveryPrice = initialTotalPrice >= FREE_DELIVERY_THRESHOLD ? 0 : DEFAULT_PRICE;
   const [deliveryPrice, setDeliveryPrice] = useState(initialDeliveryPrice);
 
-  // totalPrice вычисляем на лету
-  const totalPrice = initialTotalPrice + deliveryPrice;
+  useEffect(() => {
+    if (deliveryType === 'pickup') {
+      setDeliveryPrice(0);
+    } else {
+      // восстановим стандартную цену при доставке
+      if (initialTotalPrice >= FREE_DELIVERY_THRESHOLD) {
+        setDeliveryPrice(0);
+      } else {
+        setDeliveryPrice(DEFAULT_PRICE);
+      }
+    }
+  }, [deliveryType, initialTotalPrice]);
+  const totalPrice = initialTotalPrice + (deliveryType === 'delivery' ? deliveryPrice : 0);
 
   const [suggestions, setSuggestions] = useState([]);
   const timeoutRef = useRef(null);
 
-  // Функция форматирования номера
   const formatPhone = (value) => {
     let digits = value.replace(/\D/g, '');
     if (digits.startsWith('8')) digits = digits.slice(1);
@@ -73,18 +85,14 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
     if (matchedZones.length === 0) return OUT_OF_ZONE_PRICE;
 
     matchedZones.sort((a, b) => turf.area(a) - turf.area(b));
-
     const priceMatch = matchedZones[0].properties.description.match(/(\d+)\s*р/);
     return priceMatch ? parseInt(priceMatch[1], 10) : OUT_OF_ZONE_PRICE;
   };
 
-  // После объявления [deliveryPrice, setDeliveryPrice]
   useEffect(() => {
-    // Если сумма товаров >= 1500, доставка бесплатная
     if (initialTotalPrice >= FREE_DELIVERY_THRESHOLD) {
       setDeliveryPrice(0);
     } else {
-      // Если доставка была бесплатной, восстанавливаем базовую стоимость доставки
       setDeliveryPrice(DEFAULT_PRICE);
     }
   }, [initialTotalPrice]);
@@ -96,15 +104,10 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
 
     timeoutRef.current = setTimeout(async () => {
       if (!value.trim()) return;
-
       try {
         const res = await axios.post(
           'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address',
-          {
-            query: value,
-            count: 5,
-            locations: [{ city: 'Чита', region: 'Забайкальский' }],
-          },
+          { query: value, count: 5, locations: [{ city: 'Чита', region: 'Забайкальский' }] },
           {
             headers: {
               'Content-Type': 'application/json',
@@ -113,10 +116,7 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
             },
           },
         );
-
-        if (res.data.suggestions) {
-          setSuggestions(res.data.suggestions);
-        }
+        if (res.data.suggestions) setSuggestions(res.data.suggestions);
       } catch (err) {
         console.error('Ошибка Dadata suggest:', err);
       }
@@ -126,21 +126,15 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
   const handleSelectSuggestion = async (item) => {
     setAddress(item.value);
     setSuggestions([]);
-
     const data = item.data;
     if (!data.geo_lat || !data.geo_lon) {
       alert('Не удалось определить координаты');
       return;
     }
-
     const lat = Number(data.geo_lat);
     const lon = Number(data.geo_lon);
-
     const priceFromZone = getDeliveryPriceFromZones([lon, lat]);
-
-    // Бесплатная доставка, если сумма товаров >= FREE_DELIVERY_THRESHOLD
     const finalDeliveryPrice = initialTotalPrice >= FREE_DELIVERY_THRESHOLD ? 0 : priceFromZone;
-
     setDeliveryPrice(finalDeliveryPrice);
   };
 
@@ -175,211 +169,217 @@ const CheckoutModal = ({ isOpen, onClose, cartItems, totalPrice: initialTotalPri
     try {
       await axios.post('/api/orders', orderData);
       alert('Заказ успешно оформлен!');
-      onClose();
+      navigate(-1); // возвращаемся назад после успешного заказа
     } catch (error) {
       console.error(error);
       alert('Ошибка при отправке заказа');
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className={styles.root}>
-      <div className={styles.modal}>
-        <button className={styles.closeBtn} onClick={onClose}>
-          ✕
-        </button>
+    <div className={styles.page}>
+      <h1 className={styles.pageTitle}>Оформление заказа</h1>
 
-        <h2 className={styles.title}>Оформление заказа</h2>
+      <Link to="/" className={styles.backBtn}>
+        ← Вернуться назад
+      </Link>
 
-        {/* Имя + телефон */}
-        <div className={styles.section}>
-          <label>Ваше имя:</label>
-          <input
-            type="text"
-            placeholder="Введите имя"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-          />
-          <label>Телефон:</label>
-          <input
-            type="tel"
-            placeholder="+7 (999) 999-99-99"
-            value={phone}
-            onChange={(e) => setPhone(formatPhone(e.target.value))}
-          />
-        </div>
-
-        {/* Email */}
-        <div className={styles.section}>
-          <label>Email для отправки чека:</label>
-          <input
-            type="email"
-            placeholder="example@mail.ru"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-        </div>
-
-        {/* Доставка или самовывоз */}
-        <div className={styles.section}>
-          <label>Выберите способ получения:</label>
-          <div className={styles.radioGroup}>
-            <label>
+      <div className={styles.columns}>
+        {/* Левая колонка */}
+        <div className={styles.leftColumn}>
+          {/* Контакты */}
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Контактная информация</h2>
+            <div className={styles.row}>
+              <div className={styles.section}>
+                <label>Ваше имя</label>
+                <input
+                  type="text"
+                  placeholder="Введите имя"
+                  value={customerName}
+                  onChange={(e) => setCustomerName(e.target.value)}
+                />
+              </div>
+              <div className={styles.section}>
+                <label>Телефон</label>
+                <input
+                  type="tel"
+                  placeholder="+7 (999) 999-99-99"
+                  value={phone}
+                  onChange={(e) => setPhone(formatPhone(e.target.value))}
+                />
+              </div>
+            </div>
+            <div className={styles.section}>
+              <label>Email для отправки чека</label>
               <input
-                type="radio"
-                value="delivery"
-                checked={deliveryType === 'delivery'}
-                onChange={() => setDeliveryType('delivery')}
+                type="email"
+                placeholder="example@mail.ru"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              Доставка
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="pickup"
-                checked={deliveryType === 'pickup'}
-                onChange={() => setDeliveryType('pickup')}
-              />
-              Самовывоз
-            </label>
+            </div>
           </div>
-        </div>
 
-        {/* Адрес */}
-        {deliveryType === 'delivery' ? (
-          <div className={styles.section}>
-            <div className={styles.deliveryInfo}>
-              <p className={styles.infoTitle}>Доставка из кафе работает:</p>
-              <ul className={styles.infoList}>
-                <li>с пн-сб 9:30-22:30</li>
-                <li>в вс 10:00-22:30</li>
-                <li>
-                  Время доставки от 60-90 минут (может быть увеличенно в зависимости от расстояния,
-                  маршрута, погодных условий, загруженности)
-                </li>
-                <li>Доставка осуществляется до подъезда, а не до двери</li>
-              </ul>
-            </div>
-            <label>Адрес доставки:</label>
-            <input
-              type="text"
-              placeholder="Введите адрес"
-              value={address}
-              onChange={(e) => handleAddressChange(e.target.value)}
-            />
-            <div className={styles.deliveryPrice}>
-              Стоимость доставки: {deliveryPrice} ₽
-              {initialTotalPrice >= FREE_DELIVERY_THRESHOLD && ' (бесплатно)'}
-            </div>
+          {/* Доставка / Самовывоз */}
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Доставка / Самовывоз</h2>
+            <div className={styles.section}>
+              <div className={styles.radioGroup}>
+                <label>
+                  <input
+                    type="radio"
+                    checked={deliveryType === 'delivery'}
+                    onChange={() => setDeliveryType('delivery')}
+                  />{' '}
+                  Доставка
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    checked={deliveryType === 'pickup'}
+                    onChange={() => setDeliveryType('pickup')}
+                  />{' '}
+                  Самовывоз
+                </label>
+              </div>
 
-            {suggestions.length > 0 && (
-              <ul className={styles.suggestions}>
-                {suggestions.map((s) => (
-                  <li
-                    key={s.value}
-                    className={styles.suggestionItem}
-                    onClick={() => handleSelectSuggestion(s)}>
-                    {s.value}
-                  </li>
-                ))}
-              </ul>
+              {deliveryType === 'delivery' && (
+                <>
+                  <div className={styles.section}>
+                    <label>Адрес доставки</label>
+                    <input
+                      type="text"
+                      placeholder="Введите адрес"
+                      value={address}
+                      onChange={(e) => handleAddressChange(e.target.value)}
+                    />
+                    {suggestions.length > 0 && (
+                      <ul className={styles.suggestions}>
+                        {suggestions.map((s) => (
+                          <li
+                            key={s.value}
+                            className={styles.suggestionItem}
+                            onClick={() => handleSelectSuggestion(s)}>
+                            {s.value}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className={styles.section}>
+                    <label>Комментарий</label>
+                    <textarea
+                      placeholder="..."
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                    />
+                  </div>
+                  <div className={styles.section}>
+                    <p className={styles.infoTitle}>Доставка из кафе работает:</p>
+                    <ul className={styles.infoList}>
+                      <li>с пн-сб 9:30-22:30</li>
+                      <li>в вс 10:00-22:30</li>
+                      <li>Время доставки от 60-90 минут</li>
+                      <li>Доставка осуществляется до подъезда, а не до двери</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+
+              {deliveryType === 'pickup' && (
+                <div className={styles.section}>
+                  <p>
+                    <strong>Адрес ресторана:</strong> г. Чита, ул. Курнатовского, 30
+                  </p>
+                  <p>Время заказа от 20 минут.</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Время заказа */}
+          <div className={styles.card}>
+            <h2 className={styles.cardTitle}>Время заказа</h2>
+            <div className={styles.radioGroup}>
+              <label>
+                <input
+                  type="radio"
+                  checked={timeOption === 'nearest'}
+                  onChange={() => setTimeOption('nearest')}
+                />{' '}
+                Ближайшее
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  checked={timeOption === 'custom'}
+                  onChange={() => setTimeOption('custom')}
+                />{' '}
+                Выбрать своё
+              </label>
+            </div>
+            {timeOption === 'custom' && (
+              <div className={styles.section}>
+                <input
+                  type="time"
+                  value={orderTime}
+                  onChange={(e) => setOrderTime(e.target.value)}
+                />
+              </div>
             )}
-
-            <label>Комментарий:</label>
-            <textarea
-              placeholder="Подъезд, домофон, этаж..."
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-            />
           </div>
-        ) : (
-          <div className={styles.section}>
-            <p>
-              <strong>Адрес ресторана:</strong> г. Чита, ул. Курнатовского, 30
-            </p>
-            <p>Время заказа от 20 минут.</p>
-          </div>
-        )}
-
-        {/* Остальные блоки */}
-        <div className={styles.sectionCheckbox}>
-          <span>Нужно перезвонить</span>
-          <input type="checkbox" checked={callBack} onChange={() => setCallBack(!callBack)} />
         </div>
 
-        {paymentMethod === 'cash' && (
-          <div className={styles.section}>
-            <label>С какой суммы дать сдачу?</label>
+        {/* Правая колонка */}
+        <div className={styles.rightColumn}>
+          <div className={styles.card}>
+            <h3>Оплата</h3>
+            <div className={styles.section}>
+              <label>Способ оплаты</label>
+              <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                <option value="card">Картой онлайн</option>
+                <option value="cash">Наличными</option>
+              </select>
+              {paymentMethod === 'cash' && (
+                <div className={styles.section}>
+                  <label>С какой суммы дать сдачу?</label>
+                  <input
+                    type="number"
+                    value={changeAmount}
+                    onChange={(e) => setChangeAmount(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Блок согласия с политикой конфиденциальности */}
+          <div className={styles.sectionCheckbox}>
             <input
-              type="number"
-              placeholder="Введите сумму"
-              value={changeAmount}
-              onChange={(e) => setChangeAmount(e.target.value)}
+              type="checkbox"
+              id="agreePolicy"
+              checked={agreePolicy}
+              onChange={(e) => setAgreePolicy(e.target.checked)}
             />
-          </div>
-        )}
-
-        <div className={styles.section}>
-          <label>Способ оплаты:</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <option value="card">Картой онлайн</option>
-            <option value="cash">Наличными</option>
-          </select>
-        </div>
-
-        <div className={styles.section}>
-          <label>Время заказа:</label>
-          <div className={styles.radioGroup}>
-            <label>
-              <input
-                type="radio"
-                value="nearest"
-                checked={timeOption === 'nearest'}
-                onChange={() => setTimeOption('nearest')}
-              />
-              Ближайшее
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="custom"
-                checked={timeOption === 'custom'}
-                onChange={() => setTimeOption('custom')}
-              />
-              Выбрать своё
+            <label htmlFor="agreePolicy">
+              Я согласен с <Link to="/offer">политикой конфиденциальности</Link>
             </label>
           </div>
 
-          {timeOption === 'custom' && (
-            <input type="time" value={orderTime} onChange={(e) => setOrderTime(e.target.value)} />
-          )}
-        </div>
-
-        <div className={styles.sectionCheckbox}>
-          <input
-            type="checkbox"
-            checked={agreePolicy}
-            onChange={() => setAgreePolicy(!agreePolicy)}
-          />
-          <span>
-            Я согласен с{' '}
-            <Link to="/offer" target="_blank">
-              политикой конфиденциальности
-            </Link>
-          </span>
-        </div>
-
-        <div className={styles.footer}>
-          <span className={styles.total}>Итого: {totalPrice} ₽</span>
-          <button className={styles.submitBtn} onClick={handleSubmit}>
-            Подтвердить заказ
-          </button>
+          <div className={styles.card}>
+            <h3>Итог заказа</h3>
+            <div className={styles.cartSummary}>
+              <h5>Цена доставки: {deliveryPrice} ₽</h5>
+              <div className={styles.total}>Итого: {totalPrice} ₽</div>
+            </div>
+            <button className={styles.submitBtn} onClick={handleSubmit}>
+              Подтвердить заказ
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default CheckoutModal;
+export default CheckoutPage;

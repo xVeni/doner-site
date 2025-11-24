@@ -39,7 +39,8 @@ export const Home = () => {
   }, [searchValue, categoryId, dispatch]);
 
   React.useEffect(() => {
-    dispatch(fetchDish({ categoryId, searchValue }));
+    const effectiveCategory = searchValue ? 1 : categoryId;
+    dispatch(fetchDish({ categoryId: effectiveCategory, search: searchValue }));
   }, [categoryId, searchValue, dispatch]);
 
   const [selectedItem, setSelectedItem] = React.useState(null);

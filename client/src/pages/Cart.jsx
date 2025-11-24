@@ -48,16 +48,10 @@ const Cart = () => {
           <span className="cart__sum-text">Сумма заказа:</span>
           <span className="cart__sum-value">{totalPrice} ₽</span>
         </div>
-        <button onClick={() => setModalOpen(true)} className="cart__checkout-btn">
+        <Link to="/payment" className="cart__checkout-btn">
           Оформить заказ
-        </button>
+        </Link>
       </div>
-      <CheckoutModal
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        cartItems={items}
-        totalPrice={totalPrice}
-      />
     </div>
   );
 };
