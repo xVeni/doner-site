@@ -8,7 +8,7 @@ export const fetchDish = createAsyncThunk(
       const categoryParam = categoryId > 1 ? `category=${categoryId}&` : '';
       const searchParam = searchValue ? `search=${encodeURIComponent(searchValue)}` : '';
 
-      const url = `/api/dishes?`;
+      const url = `/api/dishes?${categoryParam}${searchValue}`;
       // ${categoryParam}${searchValue}
       const { data } = await axios.get(url);
 

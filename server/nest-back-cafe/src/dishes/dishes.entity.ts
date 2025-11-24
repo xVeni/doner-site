@@ -27,4 +27,3 @@ export class Dish {
     best_sell: number;
 }
 
-
