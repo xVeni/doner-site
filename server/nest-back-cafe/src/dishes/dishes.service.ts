@@ -16,7 +16,7 @@ export class DishesService {
     if (Array.isArray(dishes)) {
       return dishes.map(d => ({
         ...d,
-        image: `http://${serverIP}/images/${d.image}`,
+        image: `https://${serverIP}/images/${d.image}`,
       }));
     }
 
