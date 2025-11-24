@@ -13,7 +13,7 @@ export class Dish {
 
     @Column()
     weight: number;
- 
+
     @Column({nullable : true})
     desc: string;
 
@@ -25,5 +25,4 @@ export class Dish {
 
     @Column()
     best_sell: number;
-
 }
