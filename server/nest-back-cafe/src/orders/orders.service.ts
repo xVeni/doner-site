@@ -50,23 +50,5 @@ async findOne(id: number): Promise<Order> {
   return order;
 }
 
- // сохраняем paymentId в заказ
-  async savePaymentId(orderId: number, paymentId: string) {
-    await this.ordersRepo.update(orderId, { payment_id: paymentId });
-  }
-
-  // отмечаем заказ как оплаченный
-  async markOrderPaid(paymentId: string) {
-    const order = await this.ordersRepo.findOne({
-      where: { payment_id: paymentId },
-    });
-
-    if (!order) return;
-
-    order.status = 'paid';
-    await this.ordersRepo.save(order);
-
-    return order;
-  }
-
+ 
 }
