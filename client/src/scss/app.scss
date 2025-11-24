@@ -422,12 +422,13 @@ h3 {
     align-items: stretch;
     height: auto;
     min-height: 160px;
+    overflow: hidden; // важное для обрезки картинки
 
     .product-img {
       width: 40%;
       height: 100%;
       object-fit: cover;
-      border-radius: 20px;
+      border-radius: 0; // убираем радиус на мобилке
     }
 
     .product-content {
