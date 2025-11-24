@@ -72,9 +72,10 @@ const CheckoutPage = () => {
   }));
 
   const getNearestTime = () => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() + 20);
-    return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return 'ближайшее';
+    // const now = new Date();
+    // now.setMinutes(now.getMinutes() + 20);
+    // return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
   const getDeliveryPriceFromZones = (coords) => {
