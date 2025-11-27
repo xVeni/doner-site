@@ -20,6 +20,7 @@ h3 {
 
 /* ---------------- HEADER ---------------- */
 .header {
+  font-family: 'Arial Black';
   position: relative; // обязательно для абсолютного позиционирования крестика
   display: flex;
   justify-content: space-between;
@@ -85,6 +86,7 @@ h3 {
   }
 
   .search-cart {
+    font-family: 'Manrope';
     display: flex;
     align-items: center;
     gap: 10px;
@@ -92,7 +94,6 @@ h3 {
     max-width: 100%;
     flex-wrap: nowrap;
     box-sizing: border-box;
-    font-family: 'Arial ExtraBold';
 
     .input-wrapper {
       position: relative; // крестик позиционируется относительно input-wrapper
