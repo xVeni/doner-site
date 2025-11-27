@@ -10,6 +10,7 @@ import About from './pages/About';
 import Offer from './pages/Offer';
 import Zone from './pages/Zone';
 import Payment from './pages/Payment';
+import Success from './pages/Success';
 import { Routes, Route } from 'react-router-dom';
 
 export const SearchContext = React.createContext();
@@ -29,6 +30,7 @@ function App() {
           <Route path="/offer" element={<Offer />} />
           <Route path="/zone" element={<Zone />} />
           <Route path="/payment" element={<Payment />} />
+          <Route path="/success" element={<Success />} />
         </Routes>
         <Footer />
       </SearchContext.Provider>
