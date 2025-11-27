@@ -20,7 +20,7 @@ const CheckoutPage = () => {
   const [deliveryType, setDeliveryType] = useState('delivery');
   const [address, setAddress] = useState('');
   const [comment, setComment] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentMethod, setPaymentMethod] = useState('online');
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
   const [callBack, setCallBack] = useState(false);
@@ -346,7 +346,7 @@ const CheckoutPage = () => {
             <div className={styles.section}>
               <label>Способ оплаты</label>
               <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-                <option value="card">Картой онлайн</option>
+                <option value="online">Картой онлайн</option>
                 <option value="cash">Наличными</option>
               </select>
               {paymentMethod === 'cash' && (
