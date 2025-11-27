@@ -9,7 +9,7 @@ import * as turf from '@turf/turf';
 import { useSelector } from 'react-redux';
 
 const OUT_OF_ZONE_PRICE = 600;
-const DEFAULT_PRICE = 150;
+const DEFAULT_PRICE = 200;
 const FREE_DELIVERY_THRESHOLD = 1500;
 const DADATA_TOKEN = '728949fbd9504dea0d285c475d65396381f7f7b2';
 
@@ -29,6 +29,7 @@ const CheckoutPage = () => {
   const [orderTime, setOrderTime] = useState('');
   const [agreePolicy, setAgreePolicy] = useState(false);
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const initialDeliveryPrice = initialTotalPrice >= FREE_DELIVERY_THRESHOLD ? 0 : DEFAULT_PRICE;
   const [deliveryPrice, setDeliveryPrice] = useState(initialDeliveryPrice);
@@ -140,6 +141,9 @@ const CheckoutPage = () => {
   };
 
   const handleSubmit = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
     if (!customerName.trim()) return alert('Введите имя');
     if (!phone.trim()) return alert('Введите телефон');
     if (!email.trim()) return alert('Введите email');
@@ -175,6 +179,8 @@ const CheckoutPage = () => {
     } catch (error) {
       console.error(error);
       alert('Ошибка при отправке заказа');
+    } finally {
+      setIsSubmitting(false); // ← вернуть возможность нажимать после завершения
     }
   };
 
@@ -374,8 +380,8 @@ const CheckoutPage = () => {
               <h5>Цена доставки: {deliveryPrice} ₽</h5>
               <div className={styles.total}>Итого: {totalPrice} ₽</div>
             </div>
-            <button className={styles.submitBtn} onClick={handleSubmit}>
-              Подтвердить заказ
+            <button className={styles.submitBtn} onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? <div className={styles.loader}></div> : 'Подтвердить заказ'}
             </button>
           </div>
         </div>
