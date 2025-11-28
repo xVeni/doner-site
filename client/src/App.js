@@ -30,7 +30,7 @@ function App() {
           <Route path="/offer" element={<Offer />} />
           <Route path="/zone" element={<Zone />} />
           <Route path="/payment" element={<Payment />} />
-          <Route path="/success" element={<Success />} />
+          <Route path="/success/:id" element={<Success />} />
         </Routes>
         <Footer />
       </SearchContext.Provider>

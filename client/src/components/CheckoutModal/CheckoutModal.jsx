@@ -142,7 +142,6 @@ const CheckoutPage = () => {
 
   const handleSubmit = async () => {
     if (isSubmitting) return;
-    setIsSubmitting(true);
 
     if (!customerName.trim()) return alert('Введите имя');
     if (!phone.trim()) return alert('Введите телефон');
@@ -152,6 +151,8 @@ const CheckoutPage = () => {
     if (paymentMethod === 'cash' && !changeAmount.trim()) return alert('Введите сумму');
     if (timeOption === 'custom' && !orderTime.trim()) return alert('Выберите время');
     if (!agreePolicy) return alert('Необходимо согласие с политикой');
+
+    setIsSubmitting(true);
 
     const timeToSend = timeOption === 'nearest' ? getNearestTime() : orderTime;
 
