@@ -173,14 +173,22 @@ const CheckoutPage = () => {
     };
 
     try {
-      await axios.post('/api/orders', orderData);
+      const response = await axios.post('/api/orders', orderData);
+
+      // Если пришла ссылка от ЮKassa — редиректим туда
+      if (response.data.paymentUrl) {
+        window.location.href = response.data.paymentUrl;
+        return; // дальше код не выполняем
+      }
+
+      // Если оплаты нет — обычный заказ
       alert('Заказ успешно оформлен!');
-      navigate(-1); // возвращаемся назад после успешного заказа
+      navigate(-1);
     } catch (error) {
       console.error(error);
       alert('Ошибка при отправке заказа');
     } finally {
-      setIsSubmitting(false); // ← вернуть возможность нажимать после завершения
+      setIsSubmitting(false);
     }
   };
 
