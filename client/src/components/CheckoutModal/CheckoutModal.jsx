@@ -356,8 +356,19 @@ const CheckoutPage = () => {
               <label>Способ оплаты</label>
               <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                 <option value="online">Картой онлайн</option>
-                <option value="cash">Наличными</option>
+
+                {deliveryType === 'delivery' ? (
+                  <>
+                    <option value="cash">Наличными</option>
+                    <option value="courier-card">Картой курьеру</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="restaurant">Оплата в заведении</option>
+                  </>
+                )}
               </select>
+
               {paymentMethod === 'cash' && (
                 <div className={styles.section}>
                   <label>С какой суммы дать сдачу?</label>
