@@ -18,6 +18,7 @@ async function bootstrap() {
     }),
   );
 
+
   // Слушаем все интерфейсы на порту 3000
   await app.listen(3000, '0.0.0.0');
   console.log(`Server running at http://0.0.0.0:3000`);
