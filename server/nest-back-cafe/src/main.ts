@@ -19,8 +19,8 @@ async function bootstrap() {
   );
 
   // Слушаем все интерфейсы на порту 5000
-  await app.listen(5000, '0.0.0.0');
-  console.log(`Server running at http://0.0.0.0:5000`);
+  await app.listen(3000, '0.0.0.0');
+  console.log(`Server running at http://0.0.0.0:3000`);
 }
 
 bootstrap();
