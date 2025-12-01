@@ -27,24 +27,29 @@ this.bot = new TelegramBot(token, { polling: true });
       const data = query.data; // complete_12
       const [action, orderId] = data.split('_');
 
-      if (action === 'complete') {
-        const id = Number(orderId);
+if (action === 'complete') {
+  const id = Number(orderId);
 
-        // обновляем статус
-        await this.ordersService.updateTelegramStatus(id, 'completed');
+  // Обновляем статус в базе
+  await this.ordersService.updateTelegramStatus(id, 'completed');
 
-        await this.bot.editMessageReplyMarkup(
-          { inline_keyboard: [] }, // убираем кнопку
-          { chat_id: this.chatId, message_id: query.message.message_id },
-        );
+  // Получаем заказ после обновления
+  const order = await this.ordersService.findOne(id);
 
-        await this.bot.sendMessage(
-          this.chatId,
-          `✔ Заказ №${id} обработан`,
-        );
+  // Генерируем обновлённый текст сообщения
+  const newText = this.formatOrder(order);
 
-        await this.bot.answerCallbackQuery(query.id);
-      }
+  // Обновляем текст сообщения
+  await this.bot.editMessageText(newText, {
+    chat_id: this.chatId,
+    message_id: query.message.message_id,
+    parse_mode: 'Markdown',
+    reply_markup: { inline_keyboard: [] }, // убираем кнопку
+  });
+
+  // Отвечаем Telegram (обязательно)
+  await this.bot.answerCallbackQuery(query.id);
+}
     });
   }
 
