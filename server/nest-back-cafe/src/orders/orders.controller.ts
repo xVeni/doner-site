@@ -1,18 +1,56 @@
-import { Controller, Post, Body, Get, Query, Patch, Param } from '@nestjs/common';
+
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Query,
+  Patch,
+  Param,
+  HttpStatus,
+  HttpException,
+} from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { Order } from './orders.entity';
+import { PaymentService } from '../payments/payment.service'; 
 
 @Controller('orders')
 export class OrdersController {
-  constructor(private readonly ordersService: OrdersService) {}
+  constructor(
+    private readonly ordersService: OrdersService,
+    private readonly paymentService: PaymentService,
+  ) {}
 
   // Создать новый заказ
   @Post()
-  create(@Body() orderData: Partial<Order>): Promise<Order> {
+  async create(@Body() orderData: Partial<Order>) {
+    // Устанавливаем адрес для самовывоза
     if (orderData.type !== 'delivery') {
       orderData.address = 'Самовывоз';
     }
-    return this.ordersService.createOrder(orderData);
+
+    // Создаём заказ
+    const order = await this.ordersService.createOrder(orderData);
+
+    // Если онлайн-оплата — создаём платёж
+    if (order.paymentMethod === 'online') {
+      try {
+        const { confirmationUrl } = await this.paymentService.createPaymentForOrder(order);
+        return {
+          ...order,
+          paymentUrl: confirmationUrl,
+        };
+      } catch (error) {
+        // Опционально: удалить заказ или пометить как ошибку
+        throw new HttpException(
+          'Не удалось создать платёж. Попробуйте позже.',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+    }
+
+    // Для других способов оплаты — возвращаем просто заказ
+    return order;
   }
 
   // Получить все заказы
