@@ -50,6 +50,7 @@ export class OrdersController {
     }
 
     // Для других способов оплаты — возвращаем просто заказ
+    console.log(order)
     return order;
   }
 
