@@ -1,92 +1,120 @@
-import { Injectable, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, forwardRef, Inject, OnModuleInit } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { Order } from '../orders/orders.entity';
 import TelegramBot from 'node-telegram-bot-api';
+import express from 'express';
 
 @Injectable()
-export class TelegramService {
-  private bot: TelegramBot;
-  private chatId: string;
+export class TelegramService implements OnModuleInit {
+private bot: TelegramBot;
+private chatId: string;
+private expressApp = express();
 
-  constructor(@Inject(forwardRef(() => OrdersService))
-    private readonly ordersService: OrdersService,
-  ) {
+constructor(
+@Inject(forwardRef(() => OrdersService))
+private readonly ordersService: OrdersService,
+) {
 const token = process.env.TG_BOT_TOKEN;
 const chatId = process.env.TG_CHAT_ID;
 
+
 if (!token || !chatId) {
-  throw new Error('Не установлены переменные окружения TG_BOT_TOKEN или TG_CHAT_ID');
+  throw new Error(
+    'Не установлены переменные окружения TG_BOT_TOKEN или TG_CHAT_ID',
+  );
 }
 
 this.chatId = chatId;
-this.bot = new TelegramBot(token, { polling: true });
 
 
-    // Обработка кнопки "заказ обработан"
-    this.bot.on('callback_query', async (query) => {
-      const data = query.data; // complete_12
-      const [action, orderId] = data.split('_');
+this.bot = new TelegramBot(token);
 
-if (action === 'complete') {
-  const id = Number(orderId);
 
-  // Обновляем статус в базе
-  await this.ordersService.updateTelegramStatus(id, 'completed');
-
-  // Получаем заказ после обновления
-  const order = await this.ordersService.findOne(id);
-
-  // Генерируем обновлённый текст сообщения
-  const newText = this.formatOrder(order);
-
-  // Обновляем текст сообщения
-  await this.bot.editMessageText(newText, {
-    chat_id: this.chatId,
-    message_id: query.message.message_id,
-    parse_mode: 'Markdown',
-    reply_markup: { inline_keyboard: [] }, // убираем кнопку
-  });
-
-  // Отвечаем Telegram (обязательно)
-  await this.bot.answerCallbackQuery(query.id);
 }
-    });
-  }
 
-  // Генерация текста сообщения
-  private formatOrder(order: Order): string {
-    const itemsText = order.items
-      .map((i) => `Блюдо ${i.title} — ${i.quantity} шт.`)
-      .join('\n');
+async onModuleInit() {
+const port = process.env.PORT || 3000;
+const webhookPath = `/bot${process.env.TG_BOT_TOKEN}`;
 
-    return (
-      `🆕 *Новый заказ №${order.id}*\n\n` +
-      `👤 *Имя:* ${order.customer_name}\n` +
-      `📞 *Телефон:* ${order.phone}\n` +
-      `📍 *Тип:* ${order.type}\n` +
-      `🏠 *Адрес:* ${order.address}\n` +
-      `💬 *Комментарий:* ${order.comment || '-'}\n` +
-      `💳 *Оплата:* ${order.paymentMethod}\n` +
-      `💳 *Сдача с:* ${order.change_amount}\n` +
-      `⏰ *Время:* ${order.time}\n\n` +
-      `🍱 *Состав заказа:*\n${itemsText}\n\n` +
-      `💰 *Сумма доставки уже включена в стоимость:* ${order.deliveryPrice} ₽\n\n` +
-      `💰 *Сумма:* ${order.total} ₽\n\n` +
-      `Статус: ${order.status_tgBot}`
-    );
-  }
 
-  // Отправка заказа в Telegram
-  async sendOrderToTelegram(order: Order): Promise<void> {
-    const text = this.formatOrder(order);
+// Устанавливаем webhook на Telegram
+const webhookUrl = `${process.env.WEBHOOK_URL}${webhookPath}`;
+await this.bot.setWebHook(webhookUrl);
 
-    await this.bot.sendMessage(this.chatId, text, {
+// Подключаем express endpoint для webhook
+this.expressApp.use(express.json());
+this.expressApp.post(webhookPath, (req, res) => {
+  this.bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+this.expressApp.listen(port, () => {
+  console.log(`Telegram Webhook listening on port ${port}`);
+});
+
+// Обработка callback_query
+this.bot.on('callback_query', async (query) => {
+  const data = query.data; // complete_12
+  const [action, orderId] = data.split('_');
+
+  if (action === 'complete') {
+    const id = Number(orderId);
+
+    await this.ordersService.updateTelegramStatus(id, 'completed');
+    const order = await this.ordersService.findOne(id);
+
+    const newText = this.formatOrder(order);
+
+    await this.bot.editMessageText(newText, {
+      chat_id: this.chatId,
+      message_id: query.message.message_id,
       parse_mode: 'Markdown',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
-        ],
-      },
+      reply_markup: { inline_keyboard: [] },
     });
+
+    await this.bot.answerCallbackQuery(query.id);
   }
+});
+
+
+}
+
+private formatOrder(order: Order): string {
+const itemsText = order.items
+.map((i) => `Блюдо ${i.title} — ${i.quantity} шт.`)
+.join('\n');
+
+return (
+  `🆕 *Новый заказ №${order.id}*\n\n` +
+  `👤 *Имя:* ${order.customer_name}\n` +
+  `📞 *Телефон:* ${order.phone}\n` +
+  `📍 *Тип:* ${order.type}\n` +
+  `🏠 *Адрес:* ${order.address}\n` +
+  `💬 *Комментарий:* ${order.comment || '-'}\n` +
+  `💳 *Оплата:* ${order.paymentMethod}\n` +
+  `💳 *Сдача с:* ${order.change_amount}\n` +
+  `⏰ *Время:* ${order.time}\n\n` +
+  `🍱 *Состав заказа:*\n${itemsText}\n\n` +
+  `💰 *Сумма доставки уже включена в стоимость:* ${order.deliveryPrice} ₽\n\n` +
+  `💰 *Сумма:* ${order.total} ₽\n\n` +
+  `Статус: ${order.status_tgBot}`
+);
+
+
+}
+
+async sendOrderToTelegram(order: Order): Promise<void> {
+const text = this.formatOrder(order);
+
+
+await this.bot.sendMessage(this.chatId, text, {
+  parse_mode: 'Markdown',
+  reply_markup: {
+    inline_keyboard: [
+      [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
+    ],
+  },
+});
+
+}
 }
