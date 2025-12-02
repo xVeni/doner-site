@@ -1,4 +1,4 @@
-import { Controller, Post, Param } from '@nestjs/common';
+import { Controller, Post, Param, Body } from '@nestjs/common';
 import { TelegramService } from './telegram.service';
 import { OrdersService } from '../orders/orders.service';
 
@@ -16,4 +16,12 @@ export class TelegramController {
     await this.telegramService.sendOrderToTelegram(order);
     return { ok: true };
   }
+
+
+  @Post('webhook')
+  async handleWebhook(@Body() update: any) {
+    await this.telegramService.handleUpdate(update);
+    return { ok: true };
+  }
+
 }
