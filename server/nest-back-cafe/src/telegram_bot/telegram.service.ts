@@ -22,37 +22,39 @@ export class TelegramService {
     }
 
     this.chatId = chatId;
-    // ❌ Не используем polling
-    this.bot = new TelegramBot(token);
+    this.bot = new TelegramBot(token); // ❌ без polling
   }
 
-  // Метод для обработки обновлений
+  // Метод для обработки каждого update
   async handleUpdate(update: any) {
-    this.bot.processUpdate(update);
-
-    // Обработка callback_query
-    this.bot.on('callback_query', async (query) => {
+    // Проверяем, есть ли callback_query
+    if (update.callback_query) {
+      const query = update.callback_query;
       const data = query.data; // complete_12
       const [action, orderId] = data.split('_');
 
       if (action === 'complete') {
         const id = Number(orderId);
 
+        // Обновляем заказ в базе
         await this.ordersService.updateTelegramStatus(id, 'completed');
         const order = await this.ordersService.findOne(id);
 
+        // Обновляем сообщение в чате
         const newText = this.formatOrder(order);
-
         await this.bot.editMessageText(newText, {
-          chat_id: this.chatId,
+          chat_id: query.message.chat.id,
           message_id: query.message.message_id,
           parse_mode: 'Markdown',
-          reply_markup: { inline_keyboard: [] },
+          reply_markup: { inline_keyboard: [] }, // убираем кнопку
         });
 
+        // Отвечаем Telegram
         await this.bot.answerCallbackQuery(query.id);
       }
-    });
+    }
+
+    // Можно добавить обработку обычных сообщений, если нужно
   }
 
   private formatOrder(order: Order): string {
@@ -90,6 +92,7 @@ export class TelegramService {
     });
   }
 
+  // Установка webhook
   async setWebhook() {
     const webhookUrl = `${process.env.WEBHOOK_URL}/telegram/webhook`;
     await this.bot.setWebHook(webhookUrl);
