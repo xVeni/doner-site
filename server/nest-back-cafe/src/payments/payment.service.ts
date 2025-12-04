@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { YooCheckout } from '@a2seven/yoo-checkout'; // ← только это
 import { v4 as uuidv4 } from 'uuid';
 import { Order } from '../orders/orders.entity';
+import { TelegramService } from '../telegram_bot/telegram.service'; // ← важно
 
 @Injectable()
 export class PaymentService implements OnModuleInit {
@@ -14,6 +15,7 @@ export class PaymentService implements OnModuleInit {
   constructor(
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
+    private readonly telegramService: TelegramService,
   ) {}
 
   onModuleInit() {
@@ -73,5 +75,25 @@ export class PaymentService implements OnModuleInit {
     throw new Error(`Не удалось создать платёж: ${error.message || 'неизвестная ошибка'}`);
   }
 }
+
+async handleWebhook(data: any) {
+  if (data.event !== 'payment.succeeded') return;
+
+  const payment = data.object;
+
+  const orderId = Number(payment.metadata.order_id);
+  if (!orderId) return;
+
+  const order = await this.orderRepository.findOneBy({ id: orderId });
+  if (!order) return;
+
+  // Обновляем в базе
+  order.status = 'paid';
+  await this.orderRepository.save(order);
+
+  // Отправляем сообщение в Telegram
+  await this.telegramService.sendPaymentStatus(order, payment.amount.value);
+}
+
 
 }

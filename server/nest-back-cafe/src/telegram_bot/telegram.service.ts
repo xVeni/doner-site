@@ -70,6 +70,7 @@ export class TelegramService {
       `🏠 *Адрес:* ${order.address}\n` +
       `💬 *Комментарий:* ${order.comment || '-'}\n` +
       `💳 *Оплата:* ${order.paymentMethod}\n` +
+      `💵 *Статус оплаты:* ${order.paymentMethod === 'online' ? 'ОЖИДАЕТ ОПЛАТЫ' : 'НЕ НУЖНА'}\n` +
       `💳 *Сдача с:* ${order.change_amount}\n` +
       `⏰ *Время:* ${order.time}\n\n` +
       `🍱 *Состав заказа:*\n${itemsText}\n\n` +
@@ -97,4 +98,15 @@ export class TelegramService {
     const webhookUrl = `${process.env.WEBHOOK_URL}/telegram/webhook`;
     await this.bot.setWebHook(webhookUrl);
   }
+
+  async sendPaymentStatus(order: Order, amount: string) {
+  const text =
+    `✔ *Оплата прошла*\n\n` +
+    `Заказ №${order.id}\n` +
+    `💰 Сумма: ${amount} ₽\n` +
+    `Способ оплаты: ${order.paymentMethod}`;
+
+  await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
+}
+
 }
