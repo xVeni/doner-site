@@ -5,11 +5,13 @@ import { PaymentService } from './payment.service';
 import { Order } from '../orders/orders.entity';
 import { OrdersModule } from '../orders/orders.module';
 import { PaymentsController } from './payment.controller';
+import { TelegramModule } from 'src/telegram_bot/telegram.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Order]), 
     forwardRef(() => OrdersModule),
+    forwardRef(() => TelegramModule)
   ],
   controllers:[PaymentsController],    
   providers: [PaymentService],

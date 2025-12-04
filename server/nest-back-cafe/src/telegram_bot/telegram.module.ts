@@ -6,7 +6,7 @@ import { OrdersModule } from '../orders/orders.module';
 
 @Module({
   imports: [
-    forwardRef(() => OrdersModule),
+    forwardRef(() => OrdersModule)
   ],
   providers: [TelegramService],
   controllers: [TelegramController],
