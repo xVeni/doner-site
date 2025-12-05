@@ -10,6 +10,8 @@ import { OrdersModule } from './orders/orders.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { TelegramModule } from './telegram_bot/telegram.module';
+import { PaymentModule } from './payments/payment.module';
+
 
 console.log('STATIC PATH:', join(__dirname, '..', 'uploads'));
 @Module({
@@ -33,7 +35,8 @@ console.log('STATIC PATH:', join(__dirname, '..', 'uploads'));
     }),
     DishesModule,
     OrdersModule,
-    TelegramModule
+    TelegramModule,
+    PaymentModule
   ],
   
 })
