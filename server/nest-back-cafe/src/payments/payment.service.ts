@@ -77,23 +77,60 @@ export class PaymentService implements OnModuleInit {
 }
 
 async handleWebhook(data: any) {
-  if (data.event !== 'payment.succeeded') return;
+  this.logger.log('=== ЮKassa WEBHOOK получен ===');
+
+  // Логируем тело запроса
+  this.logger.debug(`Headers: ${JSON.stringify(data.headers || {})}`);
+  this.logger.debug(`Body: ${JSON.stringify(data)}`);
+
+  // Проверяем событие
+  if (data.event !== 'payment.succeeded') {
+    this.logger.log(`Пропущено событие: ${data.event}`);
+    return;
+  }
 
   const payment = data.object;
 
-  const orderId = Number(payment.metadata.order_id);
-  if (!orderId) return;
+  // Попробуем достать orderId из metadata
+  let orderId: number | null = null;
+
+  if (payment.metadata && payment.metadata.order_id) {
+    orderId = Number(payment.metadata.order_id);
+  }
+
+  // Если orderId нет в metadata, пытаемся вытащить из description
+  if (!orderId && payment.description) {
+    const match = payment.description.match(/Заказ #(\d+)/);
+    if (match) {
+      orderId = Number(match[1]);
+      this.logger.log(`[DEBUG] orderId извлечён из description: ${orderId}`);
+    }
+  }
+
+  if (!orderId) {
+    this.logger.error('Не удалось определить orderId из webhook');
+    return;
+  }
 
   const order = await this.orderRepository.findOneBy({ id: orderId });
-  if (!order) return;
+  if (!order) {
+    this.logger.error(`Заказ с id ${orderId} не найден в базе`);
+    return;
+  }
 
-  // Обновляем в базе
+  // Обновляем статус в базе
   order.status = 'paid';
   await this.orderRepository.save(order);
+  this.logger.log(`Платёж обновлён в базе: заказ #${orderId}, сумма: ${payment.amount.value}`);
 
   // Отправляем сообщение в Telegram
-  await this.telegramService.sendPaymentStatus(order,payment.amount.value);
+  try {
+    await this.telegramService.sendPaymentStatus(order, payment.amount.value);
+  } catch (e) {
+    this.logger.error('Ошибка отправки сообщения в Telegram', e);
+  }
 }
+
 
 
 }
