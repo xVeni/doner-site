@@ -100,10 +100,9 @@ export class TelegramService {
     await this.bot.setWebHook(webhookUrl);
   }
 
- async sendPaymentSuccess(order: Order) {
+ async sendPaymentStatus(order: Order, amount: string) {
   this.logger.log(`📤 [TELEGRAM] Отправка сообщения об оплате для заказа ${order.id}`);
-
-  const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.`;
+  const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.\nСумма: ${amount} ₽`;
 
   try {
     await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
@@ -112,5 +111,6 @@ export class TelegramService {
     this.logger.error('❌ Ошибка отправки сообщения в Telegram', e);
   }
 }
+
 
 }
