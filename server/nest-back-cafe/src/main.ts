@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -18,6 +19,10 @@ async function bootstrap() {
     }),
   );
 
+    app.use(
+    '/payments/webhook', 
+    bodyParser.raw({ type: 'application/json' })
+  );
 
   // Слушаем все интерфейсы на порту 3000
   await app.listen(3000, '0.0.0.0');

@@ -1,46 +1,31 @@
 import { Controller, Post, Body, Req, Res, Logger } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { PaymentService } from './payment.service';
 
 @Controller('payments')
 export class PaymentController {
   private readonly logger = new Logger(PaymentController.name);
 
+ constructor(private readonly paymentService: PaymentService) {}
+
   @Post('webhook')
-  async handleWebhook(
-    @Req() req: Request,
-    @Res() res: Response,
-    @Body() body: any,
-  ) {
+  async handleWebhook(@Req() req: Request, @Res() res: Response) {
     this.logger.log('=== ЮKassa WEBHOOK получен ===');
 
-    // Логируем заголовки
-    this.logger.debug('Headers: ' + JSON.stringify(req.headers, null, 2));
-
-    // Логируем тело
+    let body: any;
     try {
-      this.logger.debug('Body: ' + JSON.stringify(body, null, 2));
+      body = JSON.parse(req.body.toString()); // 👈 распарсиваем Buffer в JSON
     } catch (e) {
-      this.logger.error('Ошибка логирования BODY', e);
+      this.logger.error('Ошибка парсинга webhook', e);
+      return res.status(400).send('Invalid JSON');
     }
 
-    // Обработка событий
-    if (body.event === 'payment.succeeded') {
-      this.logger.log(
-        `Платёж успешен — ID: ${body.object.id}, сумма: ${body.object.amount.value}`
-      );
+    try {
+      await this.paymentService.handleWebhook(body); // 👈 передаём в сервис
+    } catch (e) {
+      this.logger.error('Ошибка обработки webhook', e);
     }
 
-    if (body.event === 'payment.waiting_for_capture') {
-      this.logger.warn(`Платёж создан, ждёт подтверждения — ID: ${body.object.id}`);
-    }
-
-    if (body.event === 'refund.succeeded') {
-      this.logger.warn(
-        `Возврат выполнен — refundId = ${body.object.id}, paymentId = ${body.object.payment_id}`
-      );
-    }
-
-    // YooKassa должна получить 200
     return res.status(200).send('ok');
   }
 }
