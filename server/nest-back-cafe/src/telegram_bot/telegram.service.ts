@@ -1,4 +1,4 @@
-import { Injectable, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
 import { OrdersService } from '../orders/orders.service';
 import { Order } from '../orders/orders.entity';
 import TelegramBot from 'node-telegram-bot-api';
@@ -7,6 +7,7 @@ import TelegramBot from 'node-telegram-bot-api';
 export class TelegramService {
   private bot: TelegramBot;
   private chatId: string;
+   private readonly logger = new Logger(TelegramService.name); 
 
   constructor(
     @Inject(forwardRef(() => OrdersService))
@@ -99,14 +100,17 @@ export class TelegramService {
     await this.bot.setWebHook(webhookUrl);
   }
 
-  async sendPaymentStatus(order: Order, amount: string) {
-  const text =
-    `✔ *Оплата прошла*\n\n` +
-    `Заказ №${order.id}\n` +
-    `💰 Сумма: ${amount} ₽\n` +
-    `Способ оплаты: ${order.paymentMethod}`;
+ async sendPaymentSuccess(order: Order) {
+  this.logger.log(`📤 [TELEGRAM] Отправка сообщения об оплате для заказа ${order.id}`);
 
-  await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
+  const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.`;
+
+  try {
+    await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
+    this.logger.log('✔ [TELEGRAM] Уведомление отправлено');
+  } catch (e) {
+    this.logger.error('❌ Ошибка отправки сообщения в Telegram', e);
+  }
 }
 
 }

@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentService } from './payment.service';
 import { Order } from '../orders/orders.entity';
 import { OrdersModule } from '../orders/orders.module';
-import { PaymentsController } from './payment.controller';
+import { PaymentController } from './payment.controller';
 import { TelegramModule } from 'src/telegram_bot/telegram.module';
 
 @Module({
@@ -13,7 +13,7 @@ import { TelegramModule } from 'src/telegram_bot/telegram.module';
     forwardRef(() => OrdersModule),
     forwardRef(() => TelegramModule)
   ],
-  controllers:[PaymentsController],    
+  controllers:[PaymentController],    
   providers: [PaymentService],
   exports: [PaymentService],
 })

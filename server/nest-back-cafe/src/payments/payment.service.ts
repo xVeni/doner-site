@@ -92,7 +92,7 @@ async handleWebhook(data: any) {
   await this.orderRepository.save(order);
 
   // Отправляем сообщение в Telegram
-  await this.telegramService.sendPaymentStatus(order, payment.amount.value);
+  await this.telegramService.sendPaymentSuccess(order);
 }
 
 
