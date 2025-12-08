@@ -21,38 +21,36 @@ export class OrdersController {
     private readonly paymentService: PaymentService,
   ) {}
 
-  @Post()
+ @Post()
 async create(@Body() orderData: Partial<Order>) {
-// Устанавливаем адрес для самовывоза
-if (orderData.type !== 'delivery') {
-orderData.address = 'Самовывоз';
-}
+  // Устанавливаем адрес для самовывоза
+  if (orderData.type !== 'delivery') {
+    orderData.address = 'Самовывоз';
+  }
 
-// Создаём заказ
-const order = await this.ordersService.createOrder(orderData);
+  // Создаём заказ
+  const order = await this.ordersService.createOrder(orderData);
 
-// Если онлайн-оплата — создаём платёж
-if (order.paymentMethod === 'online') {
-try {
-const { confirmationUrl } = await this.paymentService.createPaymentForOrder(order);
-return {
-success: true,
-order: order,          // возвращаем только созданный заказ
-paymentUrl: confirmationUrl,
-};
-} catch (error) {
-throw new HttpException(
-'Не удалось создать платёж. Попробуйте позже.',
-HttpStatus.INTERNAL_SERVER_ERROR,
-);
-}
-}
+  let paymentUrl: string | null = null;
 
-// Для других способов оплаты — возвращаем только созданный заказ
-return {
-success: true,
-order: order,
-};
+  // Если онлайн-оплата — создаём платёж
+  if (order.paymentMethod === 'online') {
+    try {
+      const { confirmationUrl } = await this.paymentService.createPaymentForOrder(order);
+      paymentUrl = confirmationUrl;
+    } catch (error) {
+      throw new HttpException(
+        'Не удалось создать платёж. Попробуйте позже.',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // ЕДИНЫЙ ФОРМАТ ОТВЕТА ДЛЯ ВСЕХ СПОСОБОВ ОПЛАТЫ
+  return {
+    orderId: order.id,        // ← именно это ждёт фронтенд
+    paymentUrl,               // null, если не онлайн
+  };
 }
 
 
