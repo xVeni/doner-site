@@ -5,7 +5,6 @@ import { YooCheckout } from '@a2seven/yoo-checkout';
 import { v4 as uuidv4 } from 'uuid';
 import { Order } from '../orders/orders.entity';
 import { TelegramService } from '../telegram_bot/telegram.service';
-import { OrdersService } from '../orders/orders.service';
 
 @Injectable()
 export class PaymentService implements OnModuleInit {
@@ -16,7 +15,7 @@ export class PaymentService implements OnModuleInit {
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
     private readonly telegramService: TelegramService,
-    private readonly ordersService: OrdersService, // ← добавлено
+    // OrdersService НЕ нужен здесь, если обновляем напрямую
   ) {}
 
   onModuleInit() {
@@ -104,28 +103,22 @@ export class PaymentService implements OnModuleInit {
       return;
     }
 
+    // Загружаем заказ
     const order = await this.orderRepository.findOneBy({ id: orderId });
     if (!order) {
       this.logger.error(`Заказ с id ${orderId} не найден в базе`);
       return;
     }
 
-    // Обновляем заказ через сервис (is_paid = true и т.д.)
-    await this.ordersService.updateAfterPayment(orderId);
+    // 🔥 Обновляем заказ НАПРЯМУЮ через сущность
+    order.is_paid = true;
+    order.status = 'paid';
+    order.status_tgBot = 'оплачено';
+    await this.orderRepository.save(order);
 
     this.logger.log(`Платёж обновлён: заказ #${orderId}, сумма: ${payment.amount.value}`);
 
-    // Обновляем заказ через сервис
-await this.ordersService.updateAfterPayment(orderId);
-
-// Получаем обновлённый заказ
-const updatedOrder = await this.orderRepository.findOneBy({ id: orderId });
-if (!updatedOrder) {
-  this.logger.error(`Заказ #${orderId} не найден при попытке отправки в Telegram`);
-  return;
-}
-
-// Теперь updatedOrder точно не null
-await this.telegramService.sendPaymentStatus(updatedOrder, payment.amount.value);
+    // Передаём уже обновлённый объект (он содержит is_paid = true)
+    await this.telegramService.sendPaymentStatus(order, payment.amount.value);
   }
 }
