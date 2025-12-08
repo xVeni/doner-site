@@ -104,7 +104,7 @@ export class PaymentService implements OnModuleInit {
     }
 
     // Загружаем заказ
-    const order = await this.orderRepository.findOneBy({ id: orderId });
+    const order = await this.orderRepository.findOne({ where: { id: orderId } });
     if (!order) {
       this.logger.error(`Заказ с id ${orderId} не найден в базе`);
       return;
