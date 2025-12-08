@@ -50,5 +50,18 @@ async findOne(id: number): Promise<Order> {
   return order;
 }
 
+async updateTelegramMessageId(id: number, messageId: string): Promise<void> {
+  await this.ordersRepo.update(id, { telegram_message_id: messageId });
+}
+
+// В OrdersService
+async updateAfterPayment(id: number): Promise<void> {
+  await this.ordersRepo.update(id, {
+    is_paid: true,
+    status: 'paid',
+    status_tgBot: 'оплачено',
+  });
+}
+
  
 }

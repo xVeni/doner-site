@@ -60,5 +60,11 @@ export class Order {
   @CreateDateColumn()
   created_at: Date;
 
+   @Column({ type: 'boolean', default: false })
+  is_paid: boolean;
+
+  @Column({ type: 'bigint', nullable: true })
+telegram_message_id: string | null;
+
 
 }

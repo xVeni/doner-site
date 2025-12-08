@@ -7,7 +7,7 @@ import TelegramBot from 'node-telegram-bot-api';
 export class TelegramService {
   private bot: TelegramBot;
   private chatId: string;
-   private readonly logger = new Logger(TelegramService.name); 
+  private readonly logger = new Logger(TelegramService.name);
 
   constructor(
     @Inject(forwardRef(() => OrdersService))
@@ -23,121 +23,137 @@ export class TelegramService {
     }
 
     this.chatId = chatId;
-    this.bot = new TelegramBot(token); // ❌ без polling
+    this.bot = new TelegramBot(token);
   }
 
-  // Метод для обработки каждого update
   async handleUpdate(update: any) {
-    // Проверяем, есть ли callback_query
     if (update.callback_query) {
       const query = update.callback_query;
-      const data = query.data; // complete_12
-      const [action, orderId] = data.split('_');
+      const data = query.data;
+      const [action, orderIdStr] = data.split('_');
+      const orderId = Number(orderIdStr);
 
-      if (action === 'complete') {
-        const id = Number(orderId);
+      if (action === 'complete' && !isNaN(orderId)) {
+        await this.ordersService.updateTelegramStatus(orderId, 'completed');
+        const order = await this.ordersService.findOne(orderId);
 
-        // Обновляем заказ в базе
-        await this.ordersService.updateTelegramStatus(id, 'completed');
-        const order = await this.ordersService.findOne(id);
-
-        // Обновляем сообщение в чате
         const newText = this.formatOrder(order);
         await this.bot.editMessageText(newText, {
           chat_id: query.message.chat.id,
           message_id: query.message.message_id,
           parse_mode: 'Markdown',
-          reply_markup: { inline_keyboard: [] }, // убираем кнопку
+          reply_markup: { inline_keyboard: [] },
         });
 
-        // Отвечаем Telegram
         await this.bot.answerCallbackQuery(query.id);
       }
     }
-
-    // Можно добавить обработку обычных сообщений, если нужно
   }
 
- private formatOrder(order: Order): string {
-  // Локализация способа оплаты
-  const paymentMethodMap: Record<string, string> = {
-    online: 'Онлайн',
-    card: 'Карта',
-    cash: 'Наличные',
-  };
+  private formatOrder(order: Order): string {
+    const paymentMethodMap: Record<string, string> = {
+      online: 'Онлайн',
+      card: 'Карта',
+      cash: 'Наличные',
+    };
 
-  // Локализация способа получения
-  const orderTypeMap: Record<string, string> = {
-    delivery: 'Доставка',
-    pickup: 'Самовывоз',
-  };
+    const orderTypeMap: Record<string, string> = {
+      delivery: 'Доставка',
+      pickup: 'Самовывоз',
+    };
 
-  const paymentMethodText = paymentMethodMap[order.paymentMethod] || order.paymentMethod;
-  const orderTypeText = orderTypeMap[order.type?.toLowerCase()] || order.type;
+    const paymentMethodText = paymentMethodMap[order.paymentMethod] || order.paymentMethod;
+    const orderTypeText = orderTypeMap[order.type?.toLowerCase()] || order.type;
 
-  const paymentStatusText =
-    order.paymentMethod === 'online' ? 'ОЖИДАЕТ ОПЛАТЫ' : 'НЕ ТРЕБУЕТСЯ';
+    const paymentStatusText =
+      order.paymentMethod === 'online'
+        ? order.is_paid
+          ? '✅ ОПЛАЧЕНО'
+          : '⏳ ОЖИДАЕТ ОПЛАТЫ'
+        : '💳 ОПЛАТА НА МЕСТЕ';
 
-  const changeText = order.change_amount ? `${order.change_amount} ₽` : '—';
+    const changeText = order.change_amount ? `${order.change_amount} ₽` : '—';
 
-  const itemsText = order.items
-    .map((i) => `— ${i.title} — ${i.quantity} шт.`)
-    .join('\n');
+    const itemsText = order.items
+      .map((i) => `— ${i.title} — ${i.quantity} шт.`)
+      .join('\n');
 
-  // Адрес показываем только при доставке
-  const addressLine =
-    orderTypeMap[order.type?.toLowerCase()] === 'Доставка'
-      ? `🏠 *Адрес:* ${order.address || '—'}\n`
-      : '';
+    const addressLine =
+      orderTypeMap[order.type?.toLowerCase()] === 'Доставка'
+        ? `🏠 *Адрес:* ${order.address || '—'}\n`
+        : '';
 
-  return (
-    `🆕 *Новый заказ №${order.id}*\n\n` +
-    `👤 *Имя:* ${order.customer_name}\n` +
-    `📞 *Телефон:* ${order.phone}\n` +
-    `📍 *Способ получения:* ${orderTypeText}\n` +
-    addressLine +
-    `💬 *Комментарий:* ${order.comment || '—'}\n` +
-    `💳 *Способ оплаты:* ${paymentMethodText}\n` +
-    `💵 *Статус оплаты:* ${paymentStatusText}\n` +
-    `💵 *Сдача с:* ${changeText}\n` +
-    `⏰ *Время оформления:* ${order.time}\n\n` +
-    `🍱 *Состав заказа:*\n${itemsText}\n\n` +
-    `💰 *Стоимость доставки:* ${order.deliveryPrice} ₽\n\n` +
-    `💰 *Итого:* ${order.total} ₽\n\n` +
-    `🔖 *Статус:* ${order.status_tgBot}`
-  );
-}
+    return (
+      `🆕 *Новый заказ №${order.id}*\n\n` +
+      `👤 *Имя:* ${order.customer_name}\n` +
+      `📞 *Телефон:* ${order.phone}\n` +
+      `📍 *Способ получения:* ${orderTypeText}\n` +
+      addressLine +
+      `💬 *Комментарий:* ${order.comment || '—'}\n` +
+      `💳 *Способ оплаты:* ${paymentMethodText}\n` +
+      `💵 *Статус оплаты:* ${paymentStatusText}\n` +
+      `💵 *Сдача с:* ${changeText}\n` +
+      `⏰ *Время оформления:* ${order.time}\n\n` +
+      `🍱 *Состав заказа:*\n${itemsText}\n\n` +
+      `💰 *Стоимость доставки:* ${order.deliveryPrice} ₽\n\n` +
+      `💰 *Итого:* ${order.total} ₽\n\n` +
+      `🔖 *Статус:* ${order.status_tgBot}`
+    );
+  }
 
   async sendOrderToTelegram(order: Order): Promise<void> {
     const text = this.formatOrder(order);
 
-    await this.bot.sendMessage(this.chatId, text, {
+    const sentMessage = await this.bot.sendMessage(this.chatId, text, {
       parse_mode: 'Markdown',
       reply_markup: {
         inline_keyboard: [
-          [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
+          [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }], // ✅ ИСПРАВЛЕНО
         ],
       },
     });
+
+    // Сохраняем только message_id в заказе (один раз!)
+    await this.ordersService.updateTelegramMessageId(order.id, sentMessage.message_id.toString());
   }
 
-  // Установка webhook
   async setWebhook() {
     const webhookUrl = `${process.env.WEBHOOK_URL}/telegram/webhook`;
     await this.bot.setWebHook(webhookUrl);
   }
 
- async sendPaymentStatus(order: Order, amount: string) {
-  this.logger.log(`📤 [TELEGRAM] Отправка сообщения об оплате для заказа ${order.id}`);
-  const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.\nСумма: ${amount} ₽`;
+  async sendPaymentStatus(order: Order, amount: string) {
+    this.logger.log(`📤 [TELEGRAM] Обработка оплаты для заказа ${order.id}`);
 
-  try {
+    // Обновляем заказ в базе: is_paid = true и статусы
+    await this.ordersService.updateAfterPayment(order.id);
+
+    // Пытаемся обновить исходное сообщение
+    if (order.telegram_message_id) {
+      try {
+        const updatedOrder = await this.ordersService.findOne(order.id);
+        const newText = this.formatOrder(updatedOrder);
+
+        await this.bot.editMessageText(newText, {
+          chat_id: this.chatId,
+          message_id: Number(order.telegram_message_id),
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }], // ✅ ИСПРАВЛЕНО
+            ],
+          },
+        });
+
+        this.logger.log(`✔ [TELEGRAM] Сообщение заказа #${order.id} обновлено`);
+      } catch (e) {
+        this.logger.error(`Ошибка редактирования сообщения для заказа #${order.id}`, e);
+      }
+    }
+
+    // ВСЕГДА отправляем дополнительное сообщение
+    const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.\nСумма: ${amount} ₽`;
     await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
-    this.logger.log('✔ [TELEGRAM] Уведомление отправлено');
-  } catch (e) {
-    this.logger.error('❌ Ошибка отправки сообщения в Telegram', e);
+    this.logger.log('✔ [TELEGRAM] Дополнительное уведомление об оплате отправлено');
   }
-}
-
-
 }
