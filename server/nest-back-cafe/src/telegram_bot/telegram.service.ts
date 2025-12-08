@@ -122,38 +122,42 @@ export class TelegramService {
     await this.bot.setWebHook(webhookUrl);
   }
 
-  async sendPaymentStatus(order: Order, amount: string) {
-    this.logger.log(`📤 [TELEGRAM] Обработка оплаты для заказа ${order.id}`);
+ async sendPaymentStatus(order: Order, amount: string) {
+  this.logger.log(`📤 [TELEGRAM] Обработка оплаты для заказа ${order.id}`);
 
-    // Обновляем заказ в базе: is_paid = true и статусы
-    await this.ordersService.updateAfterPayment(order.id);
+  // 1. Обновляем заказ в базе
+  await this.ordersService.updateAfterPayment(order.id);
 
-    // Пытаемся обновить исходное сообщение
-    if (order.telegram_message_id) {
-      try {
-        const updatedOrder = await this.ordersService.findOne(order.id);
-        const newText = this.formatOrder(updatedOrder);
+  // 2. Берём СВЕЖИЙ заказ из БД — это самое важное!
+  const freshOrder = await this.ordersService.findOne(order.id);
 
-        await this.bot.editMessageText(newText, {
-          chat_id: this.chatId,
-          message_id: Number(order.telegram_message_id),
-          parse_mode: 'Markdown',
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }], // ✅ ИСПРАВЛЕНО
-            ],
-          },
-        });
+  // 3. Если есть message_id — редактируем сообщение
+  if (freshOrder.telegram_message_id) {
+    try {
+      const newText = this.formatOrder(freshOrder);
 
-        this.logger.log(`✔ [TELEGRAM] Сообщение заказа #${order.id} обновлено`);
-      } catch (e) {
-        this.logger.error(`Ошибка редактирования сообщения для заказа #${order.id}`, e);
-      }
+      await this.bot.editMessageText(newText, {
+        chat_id: this.chatId,
+        message_id: Number(freshOrder.telegram_message_id),
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
+          ],
+        },
+      });
+
+      this.logger.log(`✔ [TELEGRAM] Сообщение заказа #${order.id} обновлено`);
+    } catch (e) {
+      this.logger.error(`Ошибка редактирования сообщения для заказа #${order.id}`, e);
     }
-
-    // ВСЕГДА отправляем дополнительное сообщение
-    const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.\nСумма: ${amount} ₽`;
-    await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
-    this.logger.log('✔ [TELEGRAM] Дополнительное уведомление об оплате отправлено');
+  } else {
+    this.logger.warn(`⚠ Нет telegram_message_id для заказа ${order.id}`);
   }
+
+  // 4. Отправляем дополнительное уведомление
+  const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.\nСумма: ${amount} ₽`;
+  await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
+}
+
 }
