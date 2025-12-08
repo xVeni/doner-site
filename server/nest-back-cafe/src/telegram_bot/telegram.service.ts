@@ -58,28 +58,55 @@ export class TelegramService {
     // Можно добавить обработку обычных сообщений, если нужно
   }
 
-  private formatOrder(order: Order): string {
-    const itemsText = order.items
-      .map((i) => `Блюдо ${i.title} — ${i.quantity} шт.`)
-      .join('\n');
+ private formatOrder(order: Order): string {
+  // Локализация способа оплаты
+  const paymentMethodMap: Record<string, string> = {
+    online: 'Онлайн',
+    card: 'Карта',
+    cash: 'Наличные',
+  };
 
-    return (
-      `🆕 *Новый заказ №${order.id}*\n\n` +
-      `👤 *Имя:* ${order.customer_name}\n` +
-      `📞 *Телефон:* ${order.phone}\n` +
-      `📍 *Тип:* ${order.type}\n` +
-      `🏠 *Адрес:* ${order.address}\n` +
-      `💬 *Комментарий:* ${order.comment || '-'}\n` +
-      `💳 *Оплата:* ${order.paymentMethod}\n` +
-      `💵 *Статус оплаты:* ${order.paymentMethod === 'online' ? 'ОЖИДАЕТ ОПЛАТЫ' : 'НЕ НУЖНА'}\n` +
-      `💳 *Сдача с:* ${order.change_amount}\n` +
-      `⏰ *Время:* ${order.time}\n\n` +
-      `🍱 *Состав заказа:*\n${itemsText}\n\n` +
-      `💰 *Сумма доставки уже включена в стоимость:* ${order.deliveryPrice} ₽\n\n` +
-      `💰 *Сумма:* ${order.total} ₽\n\n` +
-      `Статус: ${order.status_tgBot}`
-    );
-  }
+  // Локализация способа получения
+  const orderTypeMap: Record<string, string> = {
+    delivery: 'Доставка',
+    pickup: 'Самовывоз',
+  };
+
+  const paymentMethodText = paymentMethodMap[order.paymentMethod] || order.paymentMethod;
+  const orderTypeText = orderTypeMap[order.type?.toLowerCase()] || order.type;
+
+  const paymentStatusText =
+    order.paymentMethod === 'online' ? 'ОЖИДАЕТ ОПЛАТЫ' : 'НЕ ТРЕБУЕТСЯ';
+
+  const changeText = order.change_amount ? `${order.change_amount} ₽` : '—';
+
+  const itemsText = order.items
+    .map((i) => `— ${i.title} — ${i.quantity} шт.`)
+    .join('\n');
+
+  // Адрес показываем только при доставке
+  const addressLine =
+    orderTypeMap[order.type?.toLowerCase()] === 'Доставка'
+      ? `🏠 *Адрес:* ${order.address || '—'}\n`
+      : '';
+
+  return (
+    `🆕 *Новый заказ №${order.id}*\n\n` +
+    `👤 *Имя:* ${order.customer_name}\n` +
+    `📞 *Телефон:* ${order.phone}\n` +
+    `📍 *Способ получения:* ${orderTypeText}\n` +
+    addressLine +
+    `💬 *Комментарий:* ${order.comment || '—'}\n` +
+    `💳 *Способ оплаты:* ${paymentMethodText}\n` +
+    `💵 *Статус оплаты:* ${paymentStatusText}\n` +
+    `💵 *Сдача с:* ${changeText}\n` +
+    `⏰ *Время оформления:* ${order.time}\n\n` +
+    `🍱 *Состав заказа:*\n${itemsText}\n\n` +
+    `💰 *Стоимость доставки:* ${order.deliveryPrice} ₽\n\n` +
+    `💰 *Итого:* ${order.total} ₽\n\n` +
+    `🔖 *Статус:* ${order.status_tgBot}`
+  );
+}
 
   async sendOrderToTelegram(order: Order): Promise<void> {
     const text = this.formatOrder(order);
