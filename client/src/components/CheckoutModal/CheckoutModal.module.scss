@@ -8,6 +8,14 @@
   font-family: 'Manrope';
   color: #1a1a1a;
 
+  .sectionCheckbox input[type='checkbox'] {
+    accent-color: #5e652b; // делает галочку и обводку зелёными
+  }
+
+  .radioGroup input[type='radio'] {
+    accent-color: #5e652b;
+  }
+
   .backBtn {
     display: inline-block;
     margin-bottom: 20px;
@@ -218,6 +226,16 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  .errorInput {
+    border: 1px solid red;
+  }
+
+  .errorMessage {
+    color: red;
+    font-size: 12px;
+    margin-top: 2px;
   }
 
   .suggestions {

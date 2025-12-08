@@ -74,6 +74,17 @@ $main-color: #5e652b;
         font-size: 15px;
         font-weight: 500;
         transition: 0.2s ease;
+        text-decoration: none; // добавлено, чтобы текст не подчеркивался
+
+        &:hover {
+          color: $main-color;
+          transform: translateX(3px);
+        }
+      }
+      a {
+        color: #1d1d1d; // можно сделать цвет таким же как у текста
+        text-decoration: none; // убираем подчеркивание
+        transition: 0.2s ease;
 
         &:hover {
           color: $main-color;

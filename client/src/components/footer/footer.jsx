@@ -24,13 +24,23 @@ function Footer() {
           </div>
 
           <div>
-            <Link to="https://yandex.ru/profile/1768126806?lang=ru">
-              <p>Отзывы</p>
-            </Link>
+            <a
+              href="https://yandex.ru/profile/1768126806?lang=ru"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.link}>
+              Отзывы
+            </a>
+
             <Link to="/zone">
               <p>Зоны покрытия доставки</p>
             </Link>
           </div>
+        </div>
+        <div>
+          <p>
+            Остались вопросы? Напишите нам: <h4>taina_06@mail.ru</h4>
+          </p>
         </div>
       </div>
 

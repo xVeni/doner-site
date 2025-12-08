@@ -15,7 +15,7 @@ function SuccessPage() {
 
   return (
     <div className={styles.container}>
-      <h1>Оплата прошла успешно</h1>
+      <h1>Заказ успешно оформлен</h1>
       <h2>Ваш номер заказа: {id}</h2>
 
       <p className={styles.text}>Спасибо за то что выбираете Doner!</p>
