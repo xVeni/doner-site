@@ -27,28 +27,51 @@ export class TelegramService {
   }
 
   async handleUpdate(update: any) {
-    if (update.callback_query) {
-      const query = update.callback_query;
-      const data = query.data;
-      const [action, orderIdStr] = data.split('_');
-      const orderId = Number(orderIdStr);
+  if (update.callback_query) {
+    const query = update.callback_query;
+    const data = query.data;
+    const [action, orderIdStr] = data.split('_');
+    const orderId = Number(orderIdStr);
 
-      if (action === 'complete' && !isNaN(orderId)) {
-        await this.ordersService.updateTelegramStatus(orderId, 'completed');
-        const order = await this.ordersService.findOne(orderId);
+    // Завершить заказ
+    if (action === 'complete' && !isNaN(orderId)) {
+      await this.ordersService.updateTelegramStatus(orderId, 'completed');
+      const order = await this.ordersService.findOne(orderId);
 
-        const newText = this.formatOrder(order);
-        await this.bot.editMessageText(newText, {
-          chat_id: query.message.chat.id,
-          message_id: query.message.message_id,
-          parse_mode: 'Markdown',
-          reply_markup: { inline_keyboard: [] },
-        });
+      const newText = this.formatOrder(order);
+      await this.bot.editMessageText(newText, {
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
+        parse_mode: 'Markdown',
+        reply_markup: { inline_keyboard: [] },
+      });
 
-        await this.bot.answerCallbackQuery(query.id);
-      }
+      return await this.bot.answerCallbackQuery(query.id);
+    }
+
+    // 🔄 Обновить статус оплаты
+    if (action === 'refresh' && !isNaN(orderId)) {
+      const order = await this.ordersService.findOne(orderId);
+      const newText = this.formatOrder(order);
+
+      await this.bot.editMessageText(newText, {
+        chat_id: query.message.chat.id,
+        message_id: query.message.message_id,
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
+          ],
+        },
+      });
+
+      return await this.bot.answerCallbackQuery(query.id, {
+        text: 'Статус обновлён 👍',
+        show_alert: false,
+      });
     }
   }
+}
 
   private formatOrder(order: Order): string {
     const paymentMethodMap: Record<string, string> = {
@@ -125,39 +148,56 @@ export class TelegramService {
  async sendPaymentStatus(order: Order, amount: string) {
   this.logger.log(`📤 [TELEGRAM] Обработка оплаты для заказа ${order.id}`);
 
-  // 1. Обновляем заказ в базе
+  // 1. Обновляем заказ
   await this.ordersService.updateAfterPayment(order.id);
 
-  // 2. Берём СВЕЖИЙ заказ из БД — это самое важное!
+  // 2. Получаем свежие данные
   const freshOrder = await this.ordersService.findOne(order.id);
 
-  // 3. Если есть message_id — редактируем сообщение
+  // 3. Добавляем кнопку "Обновить статус оплаты"
   if (freshOrder.telegram_message_id) {
     try {
       const newText = this.formatOrder(freshOrder);
 
-      await this.bot.editMessageText(newText, {
-        chat_id: this.chatId,
-        message_id: Number(freshOrder.telegram_message_id),
-        parse_mode: 'Markdown',
-        reply_markup: {
+      await this.bot.editMessageReplyMarkup(
+        {
           inline_keyboard: [
-            [{ text: '✔ Заказ обработан', callback_data: `complete_${order.id}` }],
+            [
+              { text: '🔄 Обновить статус оплаты', callback_data: `refresh_${freshOrder.id}` }
+            ],
+            [
+              { text: '✔ Заказ обработан', callback_data: `complete_${freshOrder.id}` }
+            ]
           ],
         },
-      });
+        {
+          chat_id: this.chatId,
+          message_id: Number(freshOrder.telegram_message_id),
+        },
+      );
 
-      this.logger.log(`✔ [TELEGRAM] Сообщение заказа #${order.id} обновлено`);
+      this.logger.log(`Добавлена кнопка обновления оплаты для заказа ${order.id}`);
     } catch (e) {
-      this.logger.error(`Ошибка редактирования сообщения для заказа #${order.id}`, e);
+      this.logger.error(`Ошибка добавления кнопки`, e);
     }
-  } else {
-    this.logger.warn(`⚠ Нет telegram_message_id для заказа ${order.id}`);
   }
 
-  // 4. Отправляем дополнительное уведомление
+  // 4. Отдельным сообщением отправляем уведомление об оплате
   const text = `💳 *Оплата подтверждена!*\n\nЗаказ №${order.id} оплачен онлайн.\nСумма: ${amount} ₽`;
   await this.bot.sendMessage(this.chatId, text, { parse_mode: 'Markdown' });
 }
+
+async sendPaymentFailed(order: Order, reason: string) {
+  const text =
+    `❌ *Ошибка оплаты!*\n\n` +
+    `Заказ №${order.id} не был оплачен.\n` +
+    `Причина: _${reason}_\n\n` +
+    `Пользователь мог закрыть страницу или отменить платеж.`;
+
+  await this.bot.sendMessage(this.chatId, text, {
+    parse_mode: 'Markdown',
+  });
+}
+
 
 }

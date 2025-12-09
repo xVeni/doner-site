@@ -74,51 +74,68 @@ export class PaymentService implements OnModuleInit {
     }
   }
 
-  async handleWebhook(data: any) {
-    this.logger.log('=== ЮKassa WEBHOOK получен ===');
-    this.logger.debug(`Body: ${JSON.stringify(data)}`);
+ async handleWebhook(data: any) {
+  this.logger.log('=== ЮKassa WEBHOOK получен ===');
+  this.logger.debug(`Body: ${JSON.stringify(data)}`);
 
-    if (data.event !== 'payment.succeeded') {
-      this.logger.log(`Пропущено событие: ${data.event}`);
-      return;
+  const event = data.event;
+  const payment = data.object;
+
+  // Определяем orderId
+  let orderId: number | null = null;
+
+  if (payment.metadata?.order_id) {
+    orderId = Number(payment.metadata.order_id);
+  }
+
+  if (!orderId && payment.description) {
+    const match = payment.description.match(/Заказ #(\d+)/);
+    if (match) {
+      orderId = Number(match[1]);
+      this.logger.log(`[DEBUG] orderId извлечён из description: ${orderId}`);
     }
+  }
 
-    const payment = data.object;
-    let orderId: number | null = null;
+  if (!orderId) {
+    this.logger.error('Не удалось определить orderId из webhook');
+    return;
+  }
 
-    if (payment.metadata?.order_id) {
-      orderId = Number(payment.metadata.order_id);
-    }
+  const order = await this.orderRepository.findOne({ where: { id: orderId } });
+  if (!order) {
+    this.logger.error(`Заказ с id ${orderId} не найден`);
+    return;
+  }
 
-    if (!orderId && payment.description) {
-      const match = payment.description.match(/Заказ #(\d+)/);
-      if (match) {
-        orderId = Number(match[1]);
-        this.logger.log(`[DEBUG] orderId извлечён из description: ${orderId}`);
-      }
-    }
+  // ===========================================================
+  // 1. УСПЕШНАЯ ОПЛАТА
+  // ===========================================================
 
-    if (!orderId) {
-      this.logger.error('Не удалось определить orderId из webhook');
-      return;
-    }
-
-    // Загружаем заказ
-    const order = await this.orderRepository.findOne({ where: { id: orderId } });
-    if (!order) {
-      this.logger.error(`Заказ с id ${orderId} не найден в базе`);
-      return;
-    }
-
-    // 🔥 Обновляем заказ НАПРЯМУЮ через сущность
+  if (event === 'payment.succeeded') {
     order.is_paid = true;
     order.status = 'paid';
     order.status_tgBot = 'оплачено';
     await this.orderRepository.save(order);
 
-    this.logger.log(`Платёж обновлён: заказ #${orderId}, сумма: ${payment.amount.value}`);
-
-    // Передаём уже обновлённый объект (он содержит is_paid = true)
+    this.logger.log(`Платёж успешный: заказ #${orderId}`);
     await this.telegramService.sendPaymentStatus(order, payment.amount.value);
+    return;
   }
+
+  // ===========================================================
+  // 2. ОШИБКА ОПЛАТЫ → отправляем сообщение в Telegram
+  // ===========================================================
+
+  const failureReason =
+    payment.cancellation_details?.reason ||
+    payment.cancellation_details?.party ||
+    'неизвестная ошибка';
+
+  await this.telegramService.sendPaymentFailed(order, failureReason);
+
+  this.logger.warn(
+    `❌ Оплата не прошла для заказа #${orderId}. Причина: ${failureReason}`,
+  );
+}
+
 }
