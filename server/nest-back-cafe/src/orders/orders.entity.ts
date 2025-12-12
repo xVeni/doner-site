@@ -24,7 +24,7 @@ export class Order {
   phone: string; // лучше string
 
   @Column('jsonb')
-  items: { id_dishes: number; title: string; quantity: number; }[];
+  items: { id_dishes: number; title: string; quantity: number; price: number }[];
 
   @Column('decimal')
   total: number;
