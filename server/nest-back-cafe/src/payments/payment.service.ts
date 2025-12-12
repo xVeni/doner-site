@@ -34,59 +34,96 @@ export class PaymentService implements OnModuleInit {
   }
 
   async createPaymentForOrder(order: Order): Promise<{ paymentId: string; confirmationUrl: string }> {
-    if (!this.yooCheckout) {
-      throw new Error('ЮKassa не инициализирована.');
-    }
-
-    if (order.paymentMethod !== 'online') {
-      throw new Error('Оплата через ЮKassa доступна только при способе оплаты "online"');
-    }
-
-    const idempotenceKey = uuidv4();
-    const amountValue = Number(order.total).toFixed(2);
-
-    const payload = {
-      amount: { value: amountValue, currency: 'RUB' },
-      confirmation: {
-        type: 'redirect',
-        return_url: `${process.env.FRONTEND_URL}/success/${order.id}`,
-      },
-      description: `Заказ #${order.id} в ресторане`,
-      meta: { order_id: String(order.id), phone: order.phone || '' },
-      capture: true,
-    };
-
-    try {
-      // @ts-ignore
-      const payment = await this.yooCheckout.createPayment(payload, idempotenceKey);
-
-      order.payment_id = payment.id;
-      order.payment_url = payment.confirmation?.confirmation_url || '';
-      await this.orderRepository.save(order);
-
-      return {
-        paymentId: payment.id,
-        confirmationUrl: payment.confirmation?.confirmation_url || '',
-      };
-    } catch (error: any) {
-     const errorMessage = error.message || 'неизвестная ошибка';
-  const responseData = error?.response?.data || null;
-  const status = error?.response?.status || 'no status';
-
-  this.logger.error(
-    `Ошибка создания платежа для заказа #${order.id}`,
-    {
-      errorMessage,
-      status,
-      responseData,
-      orderId: order.id,
-    },
-    error.stack
-  );
-
-  throw new Error(`Не удалось создать платёж: ${errorMessage}`);
-    }
+  if (!this.yooCheckout) {
+    throw new Error('ЮKassa не инициализирована.');
   }
+
+  if (order.paymentMethod !== 'online') {
+    throw new Error('Оплата через ЮKassa доступна только при способе оплаты "online"');
+  }
+
+  const idempotenceKey = uuidv4();
+  const totalAmount = parseFloat(order.total.toString()).toFixed(2); // например: '123.45'
+
+  // === ФОРМИРУЕМ ПОЗИЦИИ ЧЕКА ===
+  const receiptItems = order.items.map((item) => {
+    // Рассчитываем сумму позиции: price * quantity
+    const itemTotal = (item.price * item.quantity).toFixed(2);
+
+    return {
+      description: item.title.length > 128 ? item.title.substring(0, 128) : item.title,
+      quantity: item.quantity.toFixed(2), // например: "2.00"
+      amount: {
+        value: itemTotal, // ← сумма именно этой позиции
+        currency: 'RUB',
+      },
+      vat_code: 1, // без НДС (для УСН/ЕНВД)
+      payment_mode: 'full_payment',
+      payment_subject: 'meal', // ← для ресторанов правильнее 'meal'
+    };
+  });
+
+  // Необязательно, но можно проверить: сумма чека == total?
+  const receiptTotal = receiptItems
+    .reduce((sum, item) => sum + parseFloat(item.amount.value), 0)
+    .toFixed(2);
+
+  if (receiptTotal !== totalAmount) {
+    this.logger.warn(
+      `Несовпадение сумм: order.total=${totalAmount}, чек=${receiptTotal}. Используем order.total как основу.`
+    );
+    // ⚠️ ЮKassa может отклонить, если не совпадает!
+    // Убедитесь, что фронт считает total как сумму price * quantity.
+  }
+
+  const payload = {
+    amount: { value: totalAmount, currency: 'RUB' },
+    confirmation: {
+      type: 'redirect',
+      return_url: `${process.env.FRONTEND_URL}/success/${order.id}`,
+    },
+    description: `Заказ #${order.id} в ресторане`,
+    meta: { order_id: String(order.id), phone: order.phone || '' },
+    capture: true,
+    receipt: {
+      customer: {
+        email: order.email,
+        phone: order.phone,
+      },
+      items: receiptItems,
+    },
+  };
+
+  try {
+    // @ts-ignore — если типы не сходятся, но работает
+    const payment = await this.yooCheckout.createPayment(payload, idempotenceKey);
+
+    order.payment_id = payment.id;
+    order.payment_url = payment.confirmation?.confirmation_url || '';
+    await this.orderRepository.save(order);
+
+    return {
+      paymentId: payment.id,
+      confirmationUrl: payment.confirmation?.confirmation_url || '',
+    };
+  } catch (error: any) {
+    const errorMessage = error.message || 'неизвестная ошибка';
+    const responseData = error?.response?.data || null;
+    const status = error?.response?.status || 'no status';
+
+    this.logger.error(
+      `Ошибка создания платежа для заказа #${order.id}`,
+      {
+        errorMessage,
+        status,
+        responseData,
+        orderId: order.id,
+      },
+      error.stack
+    );
+    throw new Error(`Не удалось создать платёж: ${errorMessage}`);
+  }
+}
 
  async handleWebhook(data: any) {
   this.logger.log('=== ЮKassa WEBHOOK получен ===');

@@ -90,6 +90,7 @@ const CheckoutPage = () => {
     id_dishes: item.id,
     title: item.title,
     quantity: item.count,
+    price: item.price,
   }));
 
   // Функция проверки полей
