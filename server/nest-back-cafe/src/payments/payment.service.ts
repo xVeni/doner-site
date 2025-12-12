@@ -45,6 +45,24 @@ export class PaymentService implements OnModuleInit {
   const idempotenceKey = uuidv4();
   const totalAmount = parseFloat(order.total.toString()).toFixed(2); // например: '123.45'
 
+const cleanPhone = (phone: string): string => {
+  // Оставляем только цифры
+  let digits = phone.replace(/\D/g, '');
+
+  // Если начинается с 8 — заменяем на 7
+  if (digits.startsWith('8')) {
+    digits = '7' + digits.slice(1);
+  }
+
+  // Если начинается не с 7 — добавляем 7 (на всякий случай)
+  if (!digits.startsWith('7')) {
+    digits = '7' + digits;
+  }
+
+  // Обрезаем до 11 цифр (7 + 10 цифр)
+  return digits.slice(0, 11);
+};
+
   // === ФОРМИРУЕМ ПОЗИЦИИ ЧЕКА ===
   const receiptItems = order.items.map((item) => {
     // Рассчитываем сумму позиции: price * quantity
@@ -88,7 +106,7 @@ export class PaymentService implements OnModuleInit {
     receipt: {
       customer: {
         email: order.email,
-        phone: order.phone,
+        phone: cleanPhone(order.phone),
       },
       items: receiptItems,
     },
