@@ -8,25 +8,24 @@ export class PaymentController {
 
  constructor(private readonly paymentService: PaymentService) {}
 
-@Post('webhook')
-async handleWebhook(@Req() req: Request, @Res() res: Response) {
-  this.logger.log('=== ЮKassa WEBHOOK получен ===');
+  @Post('webhook')
+  async handleWebhook(@Req() req: Request, @Res() res: Response) {
+    this.logger.log('=== ЮKassa WEBHOOK получен ===');
 
-  let body: any;
-  try {
-    body = JSON.parse(req.body.toString()); // <-- ОБЯЗАТЕЛЬНО!
-  } catch (e) {
-    this.logger.error('Ошибка парсинга RAW JSON', e);
-    return res.status(400).send('Invalid JSON');
+    let body: any;
+    try {
+      body = JSON.parse(req.body.toString()); // 👈 распарсиваем Buffer в JSON
+    } catch (e) {
+      this.logger.error('Ошибка парсинга webhook', e);
+      return res.status(400).send('Invalid JSON');
+    }
+
+    try {
+      await this.paymentService.handleWebhook(body); // 👈 передаём в сервис
+    } catch (e) {
+      this.logger.error('Ошибка обработки webhook', e);
+    }
+
+    return res.status(200).send('ok');
   }
-
-  try {
-    await this.paymentService.handleWebhook(body);
-  } catch (e) {
-    this.logger.error('Ошибка обработки webhook', e);
-  }
-
-  return res.status(200).send('ok');
-}
-
 }
