@@ -69,8 +69,22 @@ export class PaymentService implements OnModuleInit {
         confirmationUrl: payment.confirmation?.confirmation_url || '',
       };
     } catch (error: any) {
-      this.logger.error(`Ошибка создания платежа для заказа #${order.id}`, error.stack);
-      throw new Error(`Не удалось создать платёж: ${error.message || 'неизвестная ошибка'}`);
+     const errorMessage = error.message || 'неизвестная ошибка';
+  const responseData = error?.response?.data || null;
+  const status = error?.response?.status || 'no status';
+
+  this.logger.error(
+    `Ошибка создания платежа для заказа #${order.id}`,
+    {
+      errorMessage,
+      status,
+      responseData,
+      orderId: order.id,
+    },
+    error.stack
+  );
+
+  throw new Error(`Не удалось создать платёж: ${errorMessage}`);
     }
   }
 
