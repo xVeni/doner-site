@@ -77,7 +77,7 @@ const cleanPhone = (phone: string): string => {
       },
       vat_code: 1, // без НДС (для УСН/ЕНВД)
       payment_mode: 'full_payment',
-      payment_subject: 'meal', // ← для ресторанов правильнее 'meal'
+      payment_subject: 'food', // ← для ресторанов правильнее 'meal'
     };
   });
 
