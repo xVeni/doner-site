@@ -2,22 +2,21 @@ import React from 'react';
 
 function Categories({ value, onClickCategory }) {
   const categories = [
-    'Хиты продаж',
-    'Все',
-    'Шаурма/Кебаб',
-    'Бртуч/Бургер/Ролл',
-    'Напитки',
-    'Стрит',
+    { id: 0, name: 'Хиты продаж' },
+    { id: 2, name: 'Шаурма/Кебаб' },
+    { id: 3, name: 'Бртуч/Бургер/Ролл' },
+    { id: 5, name: 'Стрит' }, // ← поменяли местами
+    { id: 4, name: 'Напитки' }, // ← поменяли местами
   ];
 
   return (
     <div className="categories">
-      {categories.map((categoryName, i) => (
+      {categories.map((category) => (
         <div
-          key={i}
-          onClick={() => onClickCategory(i)}
-          className={value == i ? 'category active' : 'category'}>
-          {categoryName}
+          key={category.id}
+          onClick={() => onClickCategory(category.id)}
+          className={value === category.id ? 'category active' : 'category'}>
+          {category.name}
         </div>
       ))}
     </div>

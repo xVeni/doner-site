@@ -16,14 +16,83 @@ export const Home = () => {
   const categoryId = useSelector((state) => state.filter.categoryId);
   const { searchValue } = React.useContext(SearchContext);
 
+  // ---------- ШАУРМА ----------
+  const sortShaurma = (items) => {
+    return [...items].sort((a, b) => {
+      const isKebabA = a.title.toLowerCase().includes('кебаб');
+      const isKebabB = b.title.toLowerCase().includes('кебаб');
+
+      if (isKebabA && !isKebabB) return -1;
+      if (!isKebabA && isKebabB) return 1;
+      return 0;
+    });
+  };
+
+  // ---------- БРТУЧ / БУРГЕРЫ ----------
+  const sortBruchBurger = (items) => {
+    const getPriority = (item) => {
+      const title = item.title.toLowerCase();
+
+      if (title.includes('бртуч')) return 1;
+      if (title.includes('бургер')) return 2;
+      if (title.includes('твистер')) return 3;
+
+      return 99;
+    };
+
+    return [...items].sort((a, b) => getPriority(a) - getPriority(b));
+  };
+
+  // ---------- НАПИТКИ ----------
+  const drinkOrder = [250, 330, 450, 500, 900, 1000];
+
+  const sortDrinks = (items) => {
+    return [...items].sort((a, b) => {
+      const aIndex = drinkOrder.indexOf(a.weight);
+      const bIndex = drinkOrder.indexOf(b.weight);
+
+      return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
+    });
+  };
+
+  // ---------- СТРИТ ----------
+  const sortStreet = (items) => {
+    return [...items].sort((a, b) => {
+      if (a.title.includes('Сырные') && b.title.includes('Сырные')) {
+        return a.weight - b.weight; // 3 → 6 → 9
+      }
+      if (a.title.includes('Сырные')) return -1;
+      if (b.title.includes('Сырные')) return 1;
+      return 0;
+    });
+  };
+
   // Определяем, какие товары показывать
   const displayedItems = React.useMemo(() => {
+    let filtered = [];
+
     if (categoryId === 0) {
-      return items.filter((item) => item.best_sell === 1); // Хиты продаж
-    } else if (categoryId === 1) {
-      return items; // Все товары
+      filtered = items.filter((item) => item.best_sell === 1);
     } else {
-      return items.filter((item) => item.category === categoryId); // Остальные категории
+      filtered = items.filter((item) => item.category === categoryId);
+    }
+
+    // 🔥 ХАРДКОД СОРТИРОВОК
+    switch (categoryId) {
+      case 2: // Шаурма
+        return sortShaurma(filtered);
+
+      case 3: // Бртуч / Бургеры
+        return sortBruchBurger(filtered);
+
+      case 4: // Напитки
+        return sortDrinks(filtered);
+
+      case 5: // Стрит
+        return sortStreet(filtered);
+
+      default:
+        return filtered;
     }
   }, [items, categoryId]);
 

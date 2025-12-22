@@ -9,7 +9,7 @@ export const fetchDish = createAsyncThunk(
       const searchParam = search ? `search=${encodeURIComponent(search)}` : '';
       //https://6909ebe21a446bb9cc209955.mockapi.io/Items?
       const url = `/api/dishes?${categoryParam}${searchParam}`;
-      // const url = `https://6909ebe21a446bb9cc209955.mockapi.io/Items?${categoryParam}${searchParam}`;
+      //const url = `https://6909ebe21a446bb9cc209955.mockapi.io/Items?${categoryParam}${searchParam}`;
       // ${categoryParam}${searchValue}
       const { data } = await axios.get(url);
 
