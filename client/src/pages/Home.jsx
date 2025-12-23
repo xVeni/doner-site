@@ -18,14 +18,28 @@ export const Home = () => {
 
   // ---------- ШАУРМА ----------
   const sortShaurma = (items) => {
-    return [...items].sort((a, b) => {
-      const isKebabA = a.title.toLowerCase().includes('кебаб');
-      const isKebabB = b.title.toLowerCase().includes('кебаб');
+    const getPriority = (item) => {
+      const title = item.title.toLowerCase();
 
-      if (isKebabA && !isKebabB) return -1;
-      if (!isKebabA && isKebabB) return 1;
-      return 0;
-    });
+      if (title.includes('кебаб')) return 1;
+
+      // большая шаурма
+      if (title.includes('шаурма') && !title.includes('мини')) {
+        if (title.includes('кур')) return 2;
+        if (title.includes('свин')) return 3;
+        return 4;
+      }
+
+      // маленькая шаурма
+      if (title.includes('мини шаурма')) return 5;
+
+      // добавки
+      if (title.includes('добавь') || title.includes('соус')) return 10;
+
+      return 99;
+    };
+
+    return [...items].sort((a, b) => getPriority(a) - getPriority(b));
   };
 
   // ---------- БРТУЧ / БУРГЕРЫ ----------
@@ -54,15 +68,58 @@ export const Home = () => {
       return (aIndex === -1 ? 99 : aIndex) - (bIndex === -1 ? 99 : bIndex);
     });
   };
+  const sortBestSellers = (items) => {
+    const getPriority = (item) => {
+      const title = item.title.toLowerCase();
+
+      if (title.includes('кебаб')) return 1;
+
+      if (title.includes('шаурма') && !title.includes('мини')) {
+        if (title.includes('кур')) return 2;
+        if (title.includes('свин')) return 3;
+      }
+
+      if (title.includes('мини шаурма')) {
+        if (title.includes('кур')) return 4;
+        if (title.includes('свин')) return 5;
+      }
+
+      if (title.includes('ветчин')) return 6;
+      if (title.includes('овощ')) return 7;
+
+      if (title.includes('бртуч')) return 8;
+      if (title.includes('твистер')) return 9;
+
+      return 99;
+    };
+
+    return [...items].sort((a, b) => getPriority(a) - getPriority(b));
+  };
 
   // ---------- СТРИТ ----------
   const sortStreet = (items) => {
+    const getPriority = (item) => {
+      const title = item.title.toLowerCase();
+
+      if (title.includes('картофель фри')) return 1;
+      if (title.includes('по деревенски')) return 2;
+
+      if (title.includes('сырные палочки')) return 3;
+
+      return 99;
+    };
+
     return [...items].sort((a, b) => {
+      const pA = getPriority(a);
+      const pB = getPriority(b);
+
+      if (pA !== pB) return pA - pB;
+
+      // сортировка сырных палочек по количеству
       if (a.title.includes('Сырные') && b.title.includes('Сырные')) {
-        return a.weight - b.weight; // 3 → 6 → 9
+        return a.weight - b.weight;
       }
-      if (a.title.includes('Сырные')) return -1;
-      if (b.title.includes('Сырные')) return 1;
+
       return 0;
     });
   };
@@ -73,22 +130,19 @@ export const Home = () => {
 
     if (categoryId === 0) {
       filtered = items.filter((item) => item.best_sell === 1);
-    } else {
-      filtered = items.filter((item) => item.category === categoryId);
+      return sortBestSellers(filtered);
     }
 
-    // 🔥 ХАРДКОД СОРТИРОВОК
+    filtered = items.filter((item) => item.category === categoryId);
+
     switch (categoryId) {
-      case 2: // Шаурма
+      case 2:
         return sortShaurma(filtered);
 
-      case 3: // Бртуч / Бургеры
-        return sortBruchBurger(filtered);
-
-      case 4: // Напитки
+      case 4:
         return sortDrinks(filtered);
 
-      case 5: // Стрит
+      case 5:
         return sortStreet(filtered);
 
       default:
